@@ -52,6 +52,10 @@
 
                     const result = await response.json();
 
+                    if (result.error) {
+                        document.getElementById("result").innerText = "Error: " + result.error;return;
+                    }
+
                     document.getElementById("result").innerText =
                         "Score: " + result.score +
                         " | Risk: " + result.risk +
