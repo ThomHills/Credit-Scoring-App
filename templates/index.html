@@ -4,71 +4,100 @@
     <title>Credit Score App</title>
 </head>
 
-<body style="font-family: Arial; max-width: 400px; margin: auto; padding-top: 50px;">
+<body style="font-family: Arial; background-color:#f5f7fa;">
 
-    <h2>Check Your Credit Score</h2>
+<div style="max-width: 400px; margin: auto; margin-top: 50px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1);">
+
+    <h2 style="text-align:center;">Credit Score Checker</h2>
 
     <form id="scoreForm">
-        <label>Monthly Income:</label><br>
-        <input type="number" id="income" required><br><br>
 
-        <label>Monthly Expenses:</label><br>
-        <input type="number" id="expenses" required><br><br>
+        <label>Monthly Income</label>
+        <input type="number" id="income" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
 
-        <label>Savings:</label><br>
-        <input type="number" id="savings" required><br><br>
+        <label>Monthly Expenses</label>
+        <input type="number" id="expenses" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
 
-        <label>Missed Payments:</label><br>
-        <input type="number" id="missed" required><br><br>
+        <label>Savings</label>
+        <input type="number" id="savings" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
 
-        <button type="submit">Check Score</button>
+        <label>Missed Payments</label>
+        <input type="number" id="missed" required style="width:100%; padding:10px; margin-bottom:20px; border-radius:5px; border:1px solid #ccc;">
+
+        <button type="submit" style="width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:5px; font-size:16px;">
+            Check Score
+        </button>
+
     </form>
 
-    <h3 id="result"></h3>
+    <div id="resultCard" style="margin-top:20px; padding:15px; border-radius:8px; display:none;">
+        <h3 id="scoreText"></h3>
+        <p id="riskText"></p>
+        <p id="probText"></p>
+        <p id="explainText"></p>
+    </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
+</div>
 
-            const form = document.getElementById("scoreForm");
+<script>
+document.addEventListener("DOMContentLoaded", function() {
 
-            form.addEventListener("submit", async function(e) {
-                e.preventDefault();
+    const form = document.getElementById("scoreForm");
 
-                const data = {
-                    income: document.getElementById("income").value,
-                    expenses: document.getElementById("expenses").value,
-                    savings: document.getElementById("savings").value,
-                    missed_payments: document.getElementById("missed").value
-                };
+    form.addEventListener("submit", async function(e) {
+        e.preventDefault();
 
-                try {
-                    const response = await fetch("/score", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(data)
-                    });
+        const data = {
+            income: document.getElementById("income").value,
+            expenses: document.getElementById("expenses").value,
+            savings: document.getElementById("savings").value,
+            missed_payments: document.getElementById("missed").value
+        };
 
-                    const result = await response.json();
-
-                    if (result.error) {
-                        document.getElementById("result").innerText = "Error: " + result.error;return;
-                    }
-
-                    document.getElementById("result").innerText =
-                        "Score: " + result.score +
-                        " | Risk: " + result.risk +
-                        " | Default Prob: " + (result.probability_default * 100).toFixed(2) + "%";
-
-                } catch (error) {
-                    console.error(error);
-                    document.getElementById("result").innerText = "Error processing request";
-                }
+        try {
+            const response = await fetch("/score", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(data)
             });
 
-        });
-    </script>
+            const result = await response.json();
+
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            // Update UI
+            document.getElementById("resultCard").style.display = "block";
+
+            document.getElementById("scoreText").innerText =
+                "Score: " + result.score;
+
+            document.getElementById("riskText").innerText =
+                "Risk Level: " + result.risk;
+
+            document.getElementById("probText").innerText =
+                "Default Probability: " + (result.probability_default * 100).toFixed(1) + "%";
+
+            document.getElementById("explainText").innerText =
+                "Reason: " + result.explanation.join(", ");
+
+            // Color coding
+            let color = "#28a745"; // green
+            if (result.risk === "Medium") color = "#ffc107";
+            if (result.risk === "High") color = "#dc3545";
+
+            document.getElementById("resultCard").style.background = color;
+            document.getElementById("resultCard").style.color = "white";
+
+        } catch (error) {
+            alert("Something went wrong");
+        }
+    });
+
+});
+</script>
 
 </body>
 </html>
