@@ -1,36 +1,70 @@
-<script>
-document.addEventListener("DOMContentLoaded", function() {
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Credit Score App</title>
+</head>
 
-    document.getElementById("scoreForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
+<body style="font-family: Arial; max-width: 400px; margin: auto; padding-top: 50px;">
 
-        alert("Form submitted"); // DEBUG
+    <h2>Check Your Credit Score</h2>
 
-        const data = {
-            income: document.getElementById("income").value,
-            expenses: document.getElementById("expenses").value,
-            savings: document.getElementById("savings").value,
-            missed_payments: document.getElementById("missed").value
-        };
+    <form id="scoreForm">
+        <label>Monthly Income:</label><br>
+        <input type="number" id="income" required><br><br>
 
-        try {
-            const response = await fetch(window.location.origin + '/score', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
+        <label>Monthly Expenses:</label><br>
+        <input type="number" id="expenses" required><br><br>
+
+        <label>Savings:</label><br>
+        <input type="number" id="savings" required><br><br>
+
+        <label>Missed Payments:</label><br>
+        <input type="number" id="missed" required><br><br>
+
+        <button type="submit">Check Score</button>
+    </form>
+
+    <h3 id="result"></h3>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const form = document.getElementById("scoreForm");
+
+            form.addEventListener("submit", async function(e) {
+                e.preventDefault();
+
+                const data = {
+                    income: document.getElementById("income").value,
+                    expenses: document.getElementById("expenses").value,
+                    savings: document.getElementById("savings").value,
+                    missed_payments: document.getElementById("missed").value
+                };
+
+                try {
+                    const response = await fetch("/score", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    document.getElementById("result").innerText =
+                        "Score: " + result.score +
+                        " | Risk: " + result.risk +
+                        " | Default Prob: " + (result.probability_default * 100).toFixed(2) + "%";
+
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById("result").innerText = "Error processing request";
+                }
             });
 
-            const result = await response.json();
+        });
+    </script>
 
-            document.getElementById("result").innerText =
-                "Score: " + result.score +
-                " | Risk: " + result.risk;
-
-        } catch (error) {
-            console.error(error);
-            alert("Error occurred");
-        }
-    });
-
-});
-</script>
+</body>
+</html>
