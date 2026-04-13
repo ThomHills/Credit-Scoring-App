@@ -1,67 +1,49 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>New Application</title>
-</head>
-
-<body style="font-family: Arial; background:#f5f7fa;">
+<body style="font-family:Arial; background:#f5f7fa;">
 
 <div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+    <h2>New Application</h2>
 
-    <h2>New Loan Application</h2>
+    <a href="/dashboard">Back</a><br><br>
 
-    <a href="/dashboard">← Back to Dashboard</a><br><br>
-
-    <form id="scoreForm">
-        <input type="number" id="income" placeholder="Income" required><br><br>
-        <input type="number" id="expenses" placeholder="Expenses" required><br><br>
-        <input type="number" id="savings" placeholder="Savings" required><br><br>
-        <input type="number" id="missed" placeholder="Missed Payments" required><br><br>
-
+    <form id="form">
+        <input id="income" placeholder="Income"><br><br>
+        <input id="expenses" placeholder="Expenses"><br><br>
+        <input id="savings" placeholder="Savings"><br><br>
+        <input id="missed" placeholder="Missed Payments"><br><br>
         <button type="submit">Submit</button>
     </form>
 
-    <div id="loading" style="display:none; margin-top:10px;">Processing...</div>
-
-    <div id="result" style="margin-top:15px;"></div>
-
+    <div id="msg"></div>
 </div>
 
 <script>
-document.getElementById("scoreForm").addEventListener("submit", async function(e) {
+document.getElementById("form").onsubmit = async (e) => {
     e.preventDefault();
 
-    document.getElementById("loading").style.display = "block";
-
-    const data = {
-        income: document.getElementById("income").value,
-        expenses: document.getElementById("expenses").value,
-        savings: document.getElementById("savings").value,
-        missed_payments: document.getElementById("missed").value
-    };
-
-    const response = await fetch("/score", {
+    const res = await fetch("/score", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            income: income.value,
+            expenses: expenses.value,
+            savings: savings.value,
+            missed_payments: missed.value
+        })
     });
 
-    const result = await response.json();
+    const data = await res.json();
 
-    document.getElementById("loading").style.display = "none";
-
-    if (result.error) {
-        document.getElementById("result").innerText = result.error;
+    if (data.error) {
+        msg.innerText = data.error;
         return;
     }
 
-    document.getElementById("result").innerText =
-        "Score: " + result.score + " | Risk: " + result.risk;
+    msg.innerText = "Score: " + data.score;
 
-    setTimeout(() => {
-        window.location.href = "/dashboard";
-    }, 1500);
-});
+    setTimeout(() => window.location = "/dashboard", 1500);
+};
 </script>
 
 </body>

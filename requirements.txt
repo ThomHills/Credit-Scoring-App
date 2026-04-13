@@ -3,4 +3,4 @@ gunicorn
 numpy
 scikit-learn
 psycopg2-binary
-SQLAlchemy
+Flask-SQLAlchemy

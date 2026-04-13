@@ -1,61 +1,45 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Dashboard</title>
-</head>
-
-<body style="font-family: Arial; background:#f5f7fa;">
+<body style="font-family:Arial; background:#f5f7fa;">
 
 <div style="max-width:900px; margin:auto; margin-top:40px;">
 
-    <h2>Lender Dashboard</h2>
+<h2>Dashboard</h2>
 
-    <a href="/">+ New Application</a>
-    <a href="/logout" style="float:right; color:red;">Logout</a>
+<a href="/">+ New</a>
+<a href="/logout" style="float:right;">Logout</a>
 
-    <br><br>
+<br><br>
 
-    <table style="width:100%; background:white; border-collapse:collapse;">
+<table border="1" width="100%" style="background:white; text-align:center;">
+<tr>
+<th>Income</th>
+<th>Expenses</th>
+<th>Savings</th>
+<th>Missed</th>
+<th>Score</th>
+<th>Risk</th>
+<th>Decision</th>
+<th>Action</th>
+</tr>
 
-        <tr style="background:#007bff; color:white;">
-            <th>Income</th>
-            <th>Expenses</th>
-            <th>Savings</th>
-            <th>Missed</th>
-            <th>Score</th>
-            <th>Risk</th>
-            <th>Decision</th>
-            <th>Action</th>
-        </tr>
+{% for app in apps %}
+<tr>
+<td>{{ app.income }}</td>
+<td>{{ app.expenses }}</td>
+<td>{{ app.savings }}</td>
+<td>{{ app.missed }}</td>
+<td>{{ app.score }}</td>
+<td>{{ app.risk }}</td>
+<td>{{ app.decision }}</td>
+<td>
+<a href="/decide/{{ app.id }}/approve">Approve</a> |
+<a href="/decide/{{ app.id }}/reject">Reject</a>
+</td>
+</tr>
+{% endfor %}
 
-        {% for app in apps %}
-        <tr style="text-align:center; border-bottom:1px solid #ddd;">
-            <td>{{ app.income }}</td>
-            <td>{{ app.expenses }}</td>
-            <td>{{ app.savings }}</td>
-            <td>{{ app.missed }}</td>
-            <td>{{ app.score }}</td>
-
-            <td>
-                {% if app.risk == "Low" %}
-                    <span style="color:green;">Low</span>
-                {% elif app.risk == "Medium" %}
-                    <span style="color:orange;">Medium</span>
-                {% else %}
-                    <span style="color:red;">High</span>
-                {% endif %}
-            </td>
-
-            <td>{{ app.decision }}</td>
-
-            <td>
-                <a href="/decide/{{ app.id }}/approve">Approve</a> 
-                <a href="/decide/{{ app.id }}/reject">Reject</a>
-            </td>
-        </tr>
-        {% endfor %}
-
-    </table>
+</table>
 
 </div>
 
