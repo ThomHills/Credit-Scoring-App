@@ -1,18 +1,22 @@
-<a href="/logout" style="float:right; color:red;">Logout</a>
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lender Dashboard</title>
+    <title>Dashboard</title>
 </head>
 
 <body style="font-family: Arial; background:#f5f7fa;">
 
-<div style="max-width:800px; margin:auto; margin-top:40px;">
+<div style="max-width:900px; margin:auto; margin-top:40px;">
 
     <h2>Lender Dashboard</h2>
 
-    <table style="width:100%; border-collapse:collapse; background:white;">
+    <a href="/">+ New Application</a>
+    <a href="/logout" style="float:right; color:red;">Logout</a>
+
+    <br><br>
+
+    <table style="width:100%; background:white; border-collapse:collapse;">
+
         <tr style="background:#007bff; color:white;">
             <th>Income</th>
             <th>Expenses</th>
@@ -20,6 +24,8 @@
             <th>Missed</th>
             <th>Score</th>
             <th>Risk</th>
+            <th>Decision</th>
+            <th>Action</th>
         </tr>
 
         {% for app in apps %}
@@ -38,6 +44,13 @@
                 {% else %}
                     <span style="color:red;">High</span>
                 {% endif %}
+            </td>
+
+            <td>{{ app.decision }}</td>
+
+            <td>
+                <a href="/decide/{{ loop.index0 }}/approve">Approve</a> |
+                <a href="/decide/{{ loop.index0 }}/reject">Reject</a>
             </td>
         </tr>
         {% endfor %}

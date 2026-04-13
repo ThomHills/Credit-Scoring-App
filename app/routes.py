@@ -3,14 +3,14 @@ from app.model import predict_credit_score
 
 main = Blueprint('main', __name__)
 
-# --- TEMP USER (login credentials) ---
+# --- TEMP USER ---
 USERNAME = "admin"
 PASSWORD = "1234"
 
 # --- TEMP STORAGE ---
 applications = []
 
-# --- HOME ---
+# --- HOME (SCORING PAGE, PROTECTED) ---
 @main.route('/')
 def home():
     if 'user' not in session:
@@ -60,7 +60,8 @@ def score():
             "savings": savings,
             "missed": missed,
             "score": result["score"],
-            "risk": result["risk"]
+            "risk": result["risk"],
+            "decision": "Pending"
         })
 
         return jsonify(result)
@@ -69,10 +70,24 @@ def score():
         return jsonify({"error": str(e)})
 
 
-# --- DASHBOARD (PROTECTED) ---
+# --- DASHBOARD ---
 @main.route('/dashboard')
 def dashboard():
     if 'user' not in session:
         return redirect(url_for('main.login'))
 
     return render_template('dashboard.html', apps=applications)
+
+
+# --- APPROVE / REJECT ---
+@main.route('/decide/<int:index>/<action>')
+def decide(index, action):
+    if 'user' not in session:
+        return redirect(url_for('main.login'))
+
+    if action == "approve":
+        applications[index]["decision"] = "Approved"
+    elif action == "reject":
+        applications[index]["decision"] = "Rejected"
+
+    return redirect(url_for('main.dashboard'))

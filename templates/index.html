@@ -1,203 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Credit Score App</title>
-
-    <style>
-        body {
-            font-family: Arial;
-            background-color: #f5f7fa;
-        }
-
-        .card {
-            max-width: 400px;
-            margin: auto;
-            margin-top: 50px;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        #resultCard {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
-            color: white;
-        }
-
-        #loading {
-            display: none;
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .spinner {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #007bff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .bar-container {
-            background: #ddd;
-            border-radius: 10px;
-            height: 20px;
-            margin-bottom: 10px;
-        }
-
-        #scoreBar {
-            height: 20px;
-            width: 0%;
-            border-radius: 10px;
-        }
-    </style>
+    <title>New Application</title>
 </head>
 
-<body>
+<body style="font-family: Arial; background:#f5f7fa;">
 
-<div class="card">
+<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
 
-    <h2 style="text-align:center;">Credit Score Checker</h2>
+    <h2>New Loan Application</h2>
+
+    <a href="/dashboard">← Back to Dashboard</a><br><br>
 
     <form id="scoreForm">
-        <label>Monthly Income</label>
-        <input type="number" id="income" required>
+        <input type="number" id="income" placeholder="Income" required><br><br>
+        <input type="number" id="expenses" placeholder="Expenses" required><br><br>
+        <input type="number" id="savings" placeholder="Savings" required><br><br>
+        <input type="number" id="missed" placeholder="Missed Payments" required><br><br>
 
-        <label>Monthly Expenses</label>
-        <input type="number" id="expenses" required>
-
-        <label>Savings</label>
-        <input type="number" id="savings" required>
-
-        <label>Missed Payments</label>
-        <input type="number" id="missed" required>
-
-        <button type="submit">Check Score</button>
+        <button type="submit">Submit</button>
     </form>
 
-    <!-- Loading Spinner -->
-    <div id="loading">
-        <div class="spinner"></div>
-    </div>
+    <div id="loading" style="display:none; margin-top:10px;">Processing...</div>
 
-    <!-- Result Card -->
-    <div id="resultCard">
-
-        <!-- Score Gauge -->
-        <div class="bar-container">
-            <div id="scoreBar"></div>
-        </div>
-
-        <h3 id="scoreText"></h3>
-        <p id="riskText"></p>
-        <p id="probText"></p>
-        <p id="explainText"></p>
-    </div>
+    <div id="result" style="margin-top:15px;"></div>
 
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.getElementById("scoreForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
 
-    const form = document.getElementById("scoreForm");
+    document.getElementById("loading").style.display = "block";
 
-    form.addEventListener("submit", async function(e) {
-        e.preventDefault();
+    const data = {
+        income: document.getElementById("income").value,
+        expenses: document.getElementById("expenses").value,
+        savings: document.getElementById("savings").value,
+        missed_payments: document.getElementById("missed").value
+    };
 
-        const data = {
-            income: document.getElementById("income").value,
-            expenses: document.getElementById("expenses").value,
-            savings: document.getElementById("savings").value,
-            missed_payments: document.getElementById("missed").value
-        };
-
-        // Show spinner
-        document.getElementById("loading").style.display = "block";
-        document.getElementById("resultCard").style.display = "none";
-
-        try {
-            const response = await fetch("/score", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            // Hide spinner
-            document.getElementById("loading").style.display = "none";
-
-            if (result.error) {
-                alert(result.error);
-                return;
-            }
-
-            // Show results
-            document.getElementById("resultCard").style.display = "block";
-
-            document.getElementById("scoreText").innerText =
-                "Score: " + result.score;
-
-            document.getElementById("riskText").innerText =
-                "Risk Level: " + result.risk;
-
-            document.getElementById("probText").innerText =
-                "Default Probability: " + (result.probability_default * 100).toFixed(1) + "%";
-
-            document.getElementById("explainText").innerText =
-                "Reason: " + result.explanation.join(", ");
-
-            // Score bar
-            let percent = result.score / 850 * 100;
-            let bar = document.getElementById("scoreBar");
-
-            bar.style.width = percent + "%";
-
-            if (result.risk === "Low") {
-                bar.style.background = "#28a745";
-                document.getElementById("resultCard").style.background = "#28a745";
-            } else if (result.risk === "Medium") {
-                bar.style.background = "#ffc107";
-                document.getElementById("resultCard").style.background = "#ffc107";
-            } else {
-                bar.style.background = "#dc3545";
-                document.getElementById("resultCard").style.background = "#dc3545";
-            }
-
-        } catch (error) {
-            document.getElementById("loading").style.display = "none";
-            alert("Something went wrong");
-        }
+    const response = await fetch("/score", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
     });
 
+    const result = await response.json();
+
+    document.getElementById("loading").style.display = "none";
+
+    if (result.error) {
+        document.getElementById("result").innerText = result.error;
+        return;
+    }
+
+    document.getElementById("result").innerText =
+        "Score: " + result.score + " | Risk: " + result.risk;
+
+    setTimeout(() => {
+        window.location.href = "/dashboard";
+    }, 1500);
 });
 </script>
 
