@@ -1,0 +1,50 @@
+<a href="/logout" style="float:right; color:red;">Logout</a>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lender Dashboard</title>
+</head>
+
+<body style="font-family: Arial; background:#f5f7fa;">
+
+<div style="max-width:800px; margin:auto; margin-top:40px;">
+
+    <h2>Lender Dashboard</h2>
+
+    <table style="width:100%; border-collapse:collapse; background:white;">
+        <tr style="background:#007bff; color:white;">
+            <th>Income</th>
+            <th>Expenses</th>
+            <th>Savings</th>
+            <th>Missed</th>
+            <th>Score</th>
+            <th>Risk</th>
+        </tr>
+
+        {% for app in apps %}
+        <tr style="text-align:center; border-bottom:1px solid #ddd;">
+            <td>{{ app.income }}</td>
+            <td>{{ app.expenses }}</td>
+            <td>{{ app.savings }}</td>
+            <td>{{ app.missed }}</td>
+            <td>{{ app.score }}</td>
+
+            <td>
+                {% if app.risk == "Low" %}
+                    <span style="color:green;">Low</span>
+                {% elif app.risk == "Medium" %}
+                    <span style="color:orange;">Medium</span>
+                {% else %}
+                    <span style="color:red;">High</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>
