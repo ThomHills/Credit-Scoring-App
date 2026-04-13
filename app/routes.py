@@ -13,6 +13,8 @@ applications = []
 # --- HOME ---
 @main.route('/')
 def home():
+    if 'user' not in session:
+        return redirect(url_for('main.login'))
     return render_template('index.html')
 
 
