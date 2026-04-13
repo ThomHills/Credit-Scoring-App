@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for
 from app.model import predict_credit_score
+from app.models import Application
+from app.db import db
 
 main = Blueprint('main', __name__)
 
@@ -54,15 +56,16 @@ def score():
 
         result = predict_credit_score(income, expenses, savings, missed)
 
-        applications.append({
-            "income": income,
-            "expenses": expenses,
-            "savings": savings,
-            "missed": missed,
-            "score": result["score"],
-            "risk": result["risk"],
-            "decision": "Pending"
-        })
+       new_app = Application(
+           income=income,
+           expenses=expenses,
+           savings=savings,
+           missed=missed,
+           score=result["score"],
+           risk=result["risk"]
+           )
+        db.session.add(new_app)
+        db.session.commit()
 
         return jsonify(result)
 
@@ -76,7 +79,8 @@ def dashboard():
     if 'user' not in session:
         return redirect(url_for('main.login'))
 
-    return render_template('dashboard.html', apps=applications)
+    apps = Application.query.all()
+    return render_template('dashboard.html', apps=apps)
 
 
 # --- APPROVE / REJECT ---
@@ -86,8 +90,11 @@ def decide(index, action):
         return redirect(url_for('main.login'))
 
     if action == "approve":
-        applications[index]["decision"] = "Approved"
-    elif action == "reject":
-        applications[index]["decision"] = "Rejected"
+        app_item = Application.query.get(index)
+        if action == "approve":
+            app_item.decision = "Approved"
+        elif action == "reject":
+            app_item.decision = "Rejected"
+    db.session.commit()
 
     return redirect(url_for('main.dashboard'))

@@ -49,8 +49,8 @@
             <td>{{ app.decision }}</td>
 
             <td>
-                <a href="/decide/{{ loop.index0 }}/approve">Approve</a> |
-                <a href="/decide/{{ loop.index0 }}/reject">Reject</a>
+                <a href="/decide/{{ app.id }}/approve">Approve</a> 
+                <a href="/decide/{{ app.id }}/reject">Reject</a>
             </td>
         </tr>
         {% endfor %}
