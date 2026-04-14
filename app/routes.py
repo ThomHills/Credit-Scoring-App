@@ -8,14 +8,6 @@ main = Blueprint('main', __name__)
 USERNAME = "admin"
 PASSWORD = "1234"
 
-# --- HOME ---
-@main.route('/')
-def home():
-    if 'user' not in session:
-        return redirect(url_for('main.login'))
-    return render_template('index.html')
-
-
 # --- LOGIN ---
 @main.route('/login', methods=['GET', 'POST'])
 def login():
@@ -34,7 +26,47 @@ def logout():
     return redirect(url_for('main.login'))
 
 
-# --- SCORE ---
+# --- DASHBOARD (NOW WORKS FOR BOTH / AND /dashboard) ---
+@main.route('/')
+@main.route('/dashboard')
+def dashboard():
+    if 'user' not in session:
+        return redirect(url_for('main.login'))
+
+    apps = Application.query.all()
+
+    total = len(apps)
+
+    avg_score = round(sum([a.score for a in apps]) / total, 2) if total > 0 else 0
+
+    approved = len([a for a in apps if a.decision == "Approved"])
+    approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
+
+    low = len([a for a in apps if a.risk == "Low"])
+    medium = len([a for a in apps if a.risk == "Medium"])
+    high = len([a for a in apps if a.risk == "High"])
+
+    return render_template(
+        'dashboard.html',
+        apps=apps,
+        total=total,
+        avg_score=avg_score,
+        approval_rate=approval_rate,
+        low=low,
+        medium=medium,
+        high=high
+    )
+
+
+# --- NEW APPLICATION PAGE ---
+@main.route('/new')
+def new_app():
+    if 'user' not in session:
+        return redirect(url_for('main.login'))
+    return render_template('index.html')
+
+
+# --- SCORE (API) ---
 @main.route('/score', methods=['POST'])
 def score():
     try:
@@ -65,34 +97,7 @@ def score():
         return jsonify({"error": str(e)})
 
 
-# --- DASHBOARD ---
-
-    apps = Application.query.all()
-
-    total = len(apps)
-
-    avg_score = round(sum([a.score for a in apps]) / total, 2) if total > 0 else 0
-
-    approved = len([a for a in apps if a.decision == "Approved"])
-    approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
-
-    low = len([a for a in apps if a.risk == "Low"])
-    medium = len([a for a in apps if a.risk == "Medium"])
-    high = len([a for a in apps if a.risk == "High"])
-
-    return render_template(
-        'dashboard.html',
-        apps=apps,
-        total=total,
-        avg_score=avg_score,
-        approval_rate=approval_rate,
-        low=low,
-        medium=medium,
-        high=high
-    )
-
-
-# --- DECISION ---
+# --- APPROVE / REJECT ---
 @main.route('/decide/<int:id>/<action>')
 def decide(id, action):
     if 'user' not in session:
