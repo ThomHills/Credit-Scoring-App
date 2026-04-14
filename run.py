@@ -8,16 +8,14 @@ def create_app():
     app.secret_key = "supersecretkey"
 
     # --- DATABASE CONFIG ---
-    db_url = os.environ.get("DATABASE_URL")
 
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
+db_url = os.environ.get("DATABASE_URL")
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-    # --- INIT DB ---
-    db.init_app(app)
+# 👇 CRITICAL: fallback so app never crashes
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///local.db"
 
     # --- IMPORT MODELS ---
     from app import models
