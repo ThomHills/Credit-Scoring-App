@@ -8,14 +8,17 @@ def create_app():
     app.secret_key = "supersecretkey"
 
     # --- DATABASE CONFIG ---
+    db_url = os.environ.get("DATABASE_URL")
 
-db_url = os.environ.get("DATABASE_URL")
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+    # 👇 fallback so app never crashes
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///local.db"
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# 👇 CRITICAL: fallback so app never crashes
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///local.db"
+    # --- INIT DB ---
+    db.init_app(app)
 
     # --- IMPORT MODELS ---
     from app import models
@@ -28,5 +31,5 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///local.db"
 
     return app
 
-# 👇 THIS LINE IS CRITICAL FOR GUNICORN
+# 👇 REQUIRED for gunicorn
 app = create_app()
