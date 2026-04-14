@@ -66,13 +66,30 @@ def score():
 
 
 # --- DASHBOARD ---
-@main.route('/dashboard')
-def dashboard():
-    if 'user' not in session:
-        return redirect(url_for('main.login'))
 
     apps = Application.query.all()
-    return render_template('dashboard.html', apps=apps)
+
+    total = len(apps)
+
+    avg_score = round(sum([a.score for a in apps]) / total, 2) if total > 0 else 0
+
+    approved = len([a for a in apps if a.decision == "Approved"])
+    approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
+
+    low = len([a for a in apps if a.risk == "Low"])
+    medium = len([a for a in apps if a.risk == "Medium"])
+    high = len([a for a in apps if a.risk == "High"])
+
+    return render_template(
+        'dashboard.html',
+        apps=apps,
+        total=total,
+        avg_score=avg_score,
+        approval_rate=approval_rate,
+        low=low,
+        medium=medium,
+        high=high
+    )
 
 
 # --- DECISION ---
