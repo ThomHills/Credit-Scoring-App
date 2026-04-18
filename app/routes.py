@@ -79,27 +79,15 @@ def new_app():
 # --- SCORE (API) ---
 @main.route('/score', methods=['POST'])
 def score():
-    try:
-        data = request.get_json()
+    data = request.get_json()
 
+    try:
         income = float(data.get('income', 0))
         expenses = float(data.get('expenses', 0))
         savings = float(data.get('savings', 0))
-        missed = float(data.get('missed_payments', 0))
+        missed = int(data.get('missed_payments', 0))  # 👈 IMPORTANT
 
         result = predict_credit_score(income, expenses, savings, missed)
-
-        new_app = Application(
-            income=income,
-            expenses=expenses,
-            savings=savings,
-            missed=missed,
-            score=result["score"],
-            risk=result["risk"]
-        )
-
-        db.session.add(new_app)
-        db.session.commit()
 
         return jsonify(result)
 

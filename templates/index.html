@@ -1,32 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Credit Application</title>
+</head>
+
+<body style="font-family:Arial; background:#f5f7fa;">
+
+<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+    <h2>New Application</h2>
+
+    <a href="/dashboard">Back</a><br><br>
+
+    <form id="form">
+        <input id="income" placeholder="Income" required><br><br>
+        <input id="expenses" placeholder="Expenses" required><br><br>
+        <input id="savings" placeholder="Savings" required><br><br>
+        <input id="missed" placeholder="Missed Payments" required><br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <br>
+
+    <!-- RESULTS / ERRORS SHOW HERE -->
+    <div id="msg"></div>
+</div>
+
 <script>
 document.getElementById("form").onsubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch("/score", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            income: income.value,
-            expenses: expenses.value,
-            savings: savings.value,
-            missed_payments: missed.value
-        })
-    });
+    const msg = document.getElementById("msg");
 
-    const data = await res.json();
+    msg.innerText = "Loading...";
 
-    if (data.error) {
-        msg.innerText = data.error;
-        return;
+    try {
+        const res = await fetch("/score", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                income: document.getElementById("income").value,
+                expenses: document.getElementById("expenses").value,
+                savings: document.getElementById("savings").value,
+                missed_payments: document.getElementById("missed").value
+            })
+        });
+
+        const text = await res.text();
+
+        // show raw response for debugging
+        console.log("RAW RESPONSE:", text);
+
+        const data = JSON.parse(text);
+
+        if (data.error) {
+            msg.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+            return;
+        }
+
+        msg.innerHTML = `
+            <p><strong>Score:</strong> ${data.score}</p>
+            <p><strong>Risk:</strong> ${data.risk}</p>
+            <p><strong>Probability of Default:</strong> ${data.prob_default}</p>
+        `;
+
+        // optional redirect
+        setTimeout(() => {
+            window.location = "/dashboard";
+        }, 3000);
+
+    } catch (err) {
+        msg.innerHTML = `<p style="color:red;">ERROR: ${err}</p>`;
+        console.error(err);
     }
-
-    // 👇 UPDATED DISPLAY
-    msg.innerHTML = `
-        <p><strong>Score:</strong> ${data.score}</p>
-        <p><strong>Risk:</strong> ${data.risk}</p>
-        <p><strong>Probability of Default:</strong> ${data.prob_default}</p>
-    `;
-
-    setTimeout(() => window.location = "/dashboard", 2000);
 };
 </script>
+
+</body>
+</html>
