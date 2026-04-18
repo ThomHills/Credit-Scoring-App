@@ -36,6 +36,9 @@ def predict_credit_score(income, expenses, savings, missed):
     # --- SCORE (inverse of risk) ---
     score = (1 - prob_default) * 100
 
+    prob_default = float(prob_default)   # 👈 convert here
+    score = float(score)                 # 👈 convert here
+
     # --- RISK CLASSIFICATION ---
     if prob_default > 0.6:
         risk = "High"
@@ -45,7 +48,7 @@ def predict_credit_score(income, expenses, savings, missed):
         risk = "Low"
 
     return {
-        "score": round(score, 2),
-        "risk": risk,
-        "prob_default": round(prob_default, 3)
+    "score": float(round(score, 2)),          # 👈 FIX
+    "risk": risk,
+    "prob_default": float(round(prob_default, 3))  # 👈 FIX
     }

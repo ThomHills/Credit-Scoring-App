@@ -90,19 +90,28 @@ def score():
         savings = float(data.get('savings', 0))
         missed = int(data.get('missed_payments', 0))
 
-        # 👉 ML prediction
+        # 👉 1. Run ML model
         result = predict_credit_score(income, expenses, savings, missed)
 
-        # 👉 SAVE TO DATABASE
+        # 👉 2. SAVE TO DATABASE (INSERT HERE)
         new_app = Application(
             income=income,
             expenses=expenses,
             savings=savings,
             missed=missed,
-            score=result["score"],
+            score=float(result["score"]),   # 👈 IMPORTANT
             risk=result["risk"],
             decision="Pending"
         )
+
+        db.session.add(new_app)
+        db.session.commit()
+
+        # 👉 3. Return result to frontend
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
         db.session.add(new_app)
         db.session.commit()
