@@ -2,7 +2,38 @@
 <html>
 <head>
     <title>Lender Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
+<script>
+    // Risk Chart (Bar)
+    const riskCtx = document.getElementById('riskChart');
+
+    new Chart(riskCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Low', 'Medium', 'High'],
+            datasets: [{
+                label: 'Applications',
+                data: [{{ low }}, {{ medium }}, {{ high }}],
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Decision Chart (Pie)
+    const decisionCtx = document.getElementById('decisionChart');
+
+    new Chart(decisionCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Approved', 'Rejected'],
+            datasets: [{
+                data: [{{ approved }}, {{ rejected }}]
+            }]
+        }
+    });
+</script>
 
 <body style="font-family: Arial; background:#f5f7fa;">
 
@@ -44,6 +75,20 @@
             🟡 Medium: {{ medium }} |
             🔴 High: {{ high }}
         </p>
+    </div>
+
+    <div style="display:flex; gap:20px; margin-bottom:20px;">
+
+        <div style="flex:1; background:white; padding:20px; border-radius:8px;">
+        <h3>Risk Distribution</h3>
+        <canvas id="riskChart"></canvas>
+        </div>
+
+        <div style="flex:1; background:white; padding:20px; border-radius:8px;">
+        <h3>Approval Decisions</h3>
+        <canvas id="decisionChart"></canvas>
+        </div>
+
     </div>
 
     <!-- APPLICATION TABLE -->
