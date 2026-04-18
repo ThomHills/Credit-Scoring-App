@@ -52,25 +52,35 @@ def prepare_features(income, expenses, savings, missed):
 
 # --- Prediction function ---
 def predict_credit_score(income, expenses, savings, missed):
-    # Prepare features
-    features = prepare_features(income, expenses, savings, missed)
 
-    # Scale features
-    features_scaled = scaler.transform(features)
+    # --- NORMALIZED METRICS ---
+    savings_ratio = savings / income if income > 0 else 0
+    expense_ratio = expenses / income if income > 0 else 1
 
-    # Predict probability of default
-    prob_default = model.predict_proba(features_scaled)[0][1]
+    # --- SCORE COMPONENTS ---
+    income_score = min(income / 5000, 1) * 25
+    savings_score = min(savings_ratio, 1) * 25
+    expense_score = max(0, (1 - expense_ratio)) * 25
+    missed_penalty = missed * 10
 
-    # Convert to score (300–850 range)
-    score = int(850 - (prob_default * 550))
+    # --- FINAL SCORE ---
+    score = income_score + savings_score + expense_score - missed_penalty
 
-    # Risk classification
-    if score >= 700:
-        risk = "Low"
-    elif score >= 600:
+    # Clamp between 0 and 100
+    score = max(0, min(100, score))
+
+    # --- RISK CLASSIFICATION ---
+    if score < 40:
+        risk = "High"
+    elif score < 70:
         risk = "Medium"
     else:
-        risk = "High"
+        risk = "Low"
+
+    return {
+        "score": round(score, 2),
+        "risk": risk
+    }
 
     # Simple explanation (important for trust)
     explanation = []
