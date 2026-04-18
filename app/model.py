@@ -64,7 +64,9 @@ def predict_credit_score(income, expenses, savings, missed):
     missed_penalty = missed * 10
 
     # --- FINAL SCORE ---
-    score = income_score + savings_score + expense_score - missed_penalty
+    raw_score = income_score + savings_score + expense_score
+    score = (raw_score / 75) * 100 - missed_penalty
+    score = max(0, min(100, score))
 
     # Clamp between 0 and 100
     score = max(0, min(100, score))
