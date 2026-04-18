@@ -11,7 +11,6 @@
 
 <div style="max-width:1100px; margin:auto; margin-top:40px;">
 
-    <!-- HEADER -->
     <h2>Lender Dashboard</h2>
 
     <a href="/new">+ New Application</a>
@@ -19,34 +18,24 @@
 
     <br><br>
 
-    <!-- ANALYTICS CARDS -->
+    <!-- SUMMARY CARDS -->
     <div style="display:flex; gap:15px; margin-bottom:20px;">
 
         <div style="flex:1; background:white; padding:15px; border-radius:8px;">
             <h3>Total Applications</h3>
-            <p style="font-size:20px;">{{ total }}</p>
+            <p style="font-size:20px;">{{ total or 0 }}</p>
         </div>
 
         <div style="flex:1; background:white; padding:15px; border-radius:8px;">
             <h3>Average Score</h3>
-            <p style="font-size:20px;">{{ avg_score }}</p>
+            <p style="font-size:20px;">{{ avg_score or 0 }}</p>
         </div>
 
         <div style="flex:1; background:white; padding:15px; border-radius:8px;">
             <h3>Approval Rate</h3>
-            <p style="font-size:20px;">{{ approval_rate }}%</p>
+            <p style="font-size:20px;">{{ approval_rate or 0 }}%</p>
         </div>
 
-    </div>
-
-    <!-- RISK TEXT SUMMARY -->
-    <div style="background:white; padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h3>Risk Distribution</h3>
-        <p>
-            🟢 Low: {{ low }} |
-            🟡 Medium: {{ medium }} |
-            🔴 High: {{ high }}
-        </p>
     </div>
 
     <!-- CHARTS -->
@@ -113,13 +102,14 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
+    // SAFE VALUES (no undefined)
     const low = {{ low | default(0) }};
     const medium = {{ medium | default(0) }};
     const high = {{ high | default(0) }};
     const approved = {{ approved | default(0) }};
     const rejected = {{ rejected | default(0) }};
 
-    // BAR CHART
+    // ---- RISK BAR CHART ----
     const riskCanvas = document.getElementById('riskChart');
 
     if (riskCanvas) {
@@ -129,13 +119,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 labels: ['Low', 'Medium', 'High'],
                 datasets: [{
                     label: 'Applications',
-                    data: [low, medium, high]
+                    data: [low || 0, medium || 0, high || 0]
                 }]
+            },
+            options: {
+                responsive: true
             }
         });
     }
 
-    // PIE CHART
+    // ---- DECISION PIE CHART ----
     const decisionCanvas = document.getElementById('decisionChart');
 
     if (decisionCanvas) {
@@ -144,8 +137,11 @@ document.addEventListener("DOMContentLoaded", function () {
             data: {
                 labels: ['Approved', 'Rejected'],
                 datasets: [{
-                    data: [approved, rejected]
+                    data: [approved || 0, rejected || 0]
                 }]
+            },
+            options: {
+                responsive: true
             }
         });
     }

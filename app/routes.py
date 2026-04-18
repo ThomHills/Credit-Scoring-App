@@ -77,6 +77,9 @@ def new_app():
 
 
 # --- SCORE (API) ---
+from app.models import Application
+from app.db import db
+
 @main.route('/score', methods=['POST'])
 def score():
     data = request.get_json()
@@ -85,9 +88,24 @@ def score():
         income = float(data.get('income', 0))
         expenses = float(data.get('expenses', 0))
         savings = float(data.get('savings', 0))
-        missed = int(data.get('missed_payments', 0))  # 👈 IMPORTANT
+        missed = int(data.get('missed_payments', 0))
 
+        # 👉 ML prediction
         result = predict_credit_score(income, expenses, savings, missed)
+
+        # 👉 SAVE TO DATABASE
+        new_app = Application(
+            income=income,
+            expenses=expenses,
+            savings=savings,
+            missed=missed,
+            score=result["score"],
+            risk=result["risk"],
+            decision="Pending"
+        )
+
+        db.session.add(new_app)
+        db.session.commit()
 
         return jsonify(result)
 
