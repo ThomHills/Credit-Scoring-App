@@ -46,18 +46,18 @@ def dashboard():
     medium = len([a for a in apps if a.risk == "Medium"])
     high = len([a for a in apps if a.risk == "High"])
 
-return render_template(
-    'dashboard.html',
-    apps=apps,
-    total=total,
-    avg_score=avg_score,
-    approval_rate=approval_rate,
-    low=low,
-    medium=medium,
-    high=high,
-    approved=approved,
-    rejected=(total - approved)
-)
+    return render_template(
+        'dashboard.html',
+        apps=apps,
+        total=total,
+        avg_score=avg_score,
+        approval_rate=approval_rate,
+        low=low,
+        medium=medium,
+        high=high,
+        approved=approved,
+        rejected=(total - approved)
+    )
 
 
 # --- NEW APPLICATION PAGE ---
