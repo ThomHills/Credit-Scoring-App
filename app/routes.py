@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, render_template, session, redirec
 from app.model import predict_credit_score
 from app.models import Application
 from app.db import db
+from app.models import User
 
 main = Blueprint('main', __name__)
 
@@ -12,10 +13,17 @@ PASSWORD = "1234"
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form.get('username') == USERNAME and request.form.get('password') == PASSWORD:
-            session['user'] = USERNAME
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            session['user'] = user.id
             return redirect(url_for('main.dashboard'))
+
         return "Invalid credentials"
+
     return render_template('login.html')
 
 
@@ -116,3 +124,24 @@ def decide(id, action):
         db.session.commit()
 
     return redirect(url_for('main.dashboard'))
+
+@main.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # check if user exists
+        existing = User.query.filter_by(username=username).first()
+        if existing:
+            return "User already exists"
+
+        new_user = User(username=username)
+        new_user.set_password(password)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect(url_for('main.login'))
+
+    return render_template('signup.html')
