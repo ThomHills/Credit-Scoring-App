@@ -4,3 +4,6 @@ numpy
 scikit-learn
 psycopg2-binary
 Flask-SQLAlchemy
+scikit-learn
+pandas
+numpy
