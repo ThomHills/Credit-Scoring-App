@@ -8,7 +8,33 @@ import os
 
 main = Blueprint('main', __name__)
 
+# --------------------------------
+# REGISTER
+# -------------------------------
 
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+
+            # check if user exists
+            existing = User.query.filter_by(username=username).first()
+            if existing:
+                return render_template('register.html', error="User already exists")
+
+            # create user
+            user = User(username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+
+            return redirect('/')
+
+        return render_template('register.html')
+
+    except Exception as e:
+        return f"Register error: {e}"
 # -----------------------
 # LOGIN
 # -----------------------

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial; background:#f5f7fa;">
+
+<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+    <h2>Create Account</h2>
+
+    <form method="POST">
+        <input name="username" placeholder="Username" required><br><br>
+        <input name="password" placeholder="Password" required type="password"><br><br>
+        <button type="submit">Register</button>
+    </form>
+
+    <br>
+    <a href="/">Back to Login</a>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+</div>
+
+</body>
+</html>
