@@ -112,9 +112,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const approved = {{ approved | default(0) }};
     const rejected = {{ rejected | default(0) }};
 
-    const fpr = {{ fpr | tojson }};
-    const tpr = {{ tpr | tojson }};
-
+    const fpr = {{ (fpr or []) | tojson }};
+    const tpr = {{ (tpr or []) | tojson }};
     // RISK BAR CHART
     const riskEl = document.getElementById('riskChart');
     if (riskEl) {
