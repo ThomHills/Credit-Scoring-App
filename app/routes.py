@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
+from flask import Blueprint, render_template, request, jsonify, redirect, session
 from app.model import predict_credit_score
 from app.models import Application, User
 from app.db import db
@@ -14,19 +14,23 @@ main = Blueprint('main', __name__)
 # -----------------------
 @main.route('/', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
 
-        user = User.query.filter_by(username=username, password=password).first()
+            user = User.query.filter_by(username=username, password=password).first()
 
-        if user:
-            session['user_id'] = user.id
-            return redirect('/dashboard')
+            if user:
+                session['user_id'] = user.id
+                return redirect('/dashboard')
 
-        return render_template('login.html', error="Invalid credentials")
+            return render_template('login.html', error="Invalid credentials")
 
-    return render_template('login.html')
+        return render_template('login.html')
+
+    except Exception as e:
+        return f"Login error: {e}"
 
 
 # -----------------------
@@ -43,51 +47,60 @@ def logout():
 # -----------------------
 @main.route('/dashboard')
 def dashboard():
-
-    apps = Application.query.all()
-
-    total = len(apps)
-
-    avg_score = round(sum([a.score for a in apps]) / total, 2) if total > 0 else 0
-
-    approved = len([a for a in apps if a.decision == "Approved"])
-    rejected = len([a for a in apps if a.decision == "Rejected"])
-
-    approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
-
-    low = len([a for a in apps if a.risk == "Low"])
-    medium = len([a for a in apps if a.risk == "Medium"])
-    high = len([a for a in apps if a.risk == "High"])
-
-    # ---- LOAD ROC DATA ----
-    roc_path = os.path.join(os.path.dirname(__file__), "..", "roc_data.pkl")
-
     try:
-        with open(roc_path, "rb") as f:
-            roc_data = pickle.load(f)
+        apps = Application.query.all() or []
 
-        fpr = roc_data["fpr"]
-        tpr = roc_data["tpr"]
-        auc_score = round(roc_data["auc"], 3)
+        total = len(apps)
 
-    except:
+        avg_score = round(sum([float(a.score) for a in apps]) / total, 2) if total > 0 else 0
+
+        approved = len([a for a in apps if a.decision == "Approved"])
+        rejected = len([a for a in apps if a.decision == "Rejected"])
+
+        approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
+
+        low = len([a for a in apps if a.risk == "Low"])
+        medium = len([a for a in apps if a.risk == "Medium"])
+        high = len([a for a in apps if a.risk == "High"])
+
+        # -----------------------
+        # LOAD ROC SAFELY
+        # -----------------------
         fpr, tpr, auc_score = [], [], 0
 
-    return render_template(
-        'dashboard.html',
-        apps=apps,
-        total=total,
-        avg_score=avg_score,
-        approval_rate=approval_rate,
-        approved=approved,
-        rejected=rejected,
-        low=low,
-        medium=medium,
-        high=high,
-        fpr=fpr,
-        tpr=tpr,
-        auc=auc_score
-    )
+        try:
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            roc_path = os.path.join(base_dir, "roc_data.pkl")
+
+            if os.path.exists(roc_path):
+                with open(roc_path, "rb") as f:
+                    roc_data = pickle.load(f)
+
+                fpr = roc_data.get("fpr", [])
+                tpr = roc_data.get("tpr", [])
+                auc_score = round(float(roc_data.get("auc", 0)), 3)
+
+        except Exception as e:
+            print("ROC load error:", e)
+
+        return render_template(
+            "dashboard.html",
+            apps=apps,
+            total=total,
+            avg_score=avg_score,
+            approval_rate=approval_rate,
+            approved=approved,
+            rejected=rejected,
+            low=low,
+            medium=medium,
+            high=high,
+            fpr=fpr,
+            tpr=tpr,
+            auc=auc_score
+        )
+
+    except Exception as e:
+        return f"Dashboard error: {e}"
 
 
 # -----------------------
@@ -103,29 +116,28 @@ def new_application():
 # -----------------------
 @main.route('/score', methods=['POST'])
 def score():
-
-    data = request.get_json()
-
     try:
+        data = request.get_json() or {}
+
         income = float(data.get('income', 0))
         expenses = float(data.get('expenses', 0))
         savings = float(data.get('savings', 0))
         missed = int(data.get('missed_payments', 0))
 
-        # ---- ML MODEL ----
+        # ---- MODEL ----
         result = predict_credit_score(income, expenses, savings, missed)
 
-        if "error" in result:
-            return jsonify(result)
+        if not result or "error" in result:
+            return jsonify({"error": "Model failed"})
 
-        # ---- SAVE TO DB ----
+        # ---- SAVE ----
         new_app = Application(
             income=income,
             expenses=expenses,
             savings=savings,
             missed=missed,
-            score=float(result["score"]),
-            risk=result["risk"],
+            score=float(result.get("score", 0)),
+            risk=result.get("risk", "Unknown"),
             decision="Pending"
         )
 
@@ -143,10 +155,14 @@ def score():
 # -----------------------
 @main.route('/decide/<int:id>/approve')
 def approve(id):
-    app = Application.query.get(id)
-    if app:
-        app.decision = "Approved"
-        db.session.commit()
+    try:
+        app = Application.query.get(id)
+        if app:
+            app.decision = "Approved"
+            db.session.commit()
+    except Exception as e:
+        print("Approve error:", e)
+
     return redirect('/dashboard')
 
 
@@ -155,8 +171,12 @@ def approve(id):
 # -----------------------
 @main.route('/decide/<int:id>/reject')
 def reject(id):
-    app = Application.query.get(id)
-    if app:
-        app.decision = "Rejected"
-        db.session.commit()
+    try:
+        app = Application.query.get(id)
+        if app:
+            app.decision = "Rejected"
+            db.session.commit()
+    except Exception as e:
+        print("Reject error:", e)
+
     return redirect('/dashboard')
