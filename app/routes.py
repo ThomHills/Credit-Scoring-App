@@ -14,23 +14,18 @@ main = Blueprint('main', __name__)
 # -----------------------
 @main.route('/', methods=['GET', 'POST'])
 def login():
-    try:
-        if request.method == 'POST':
-            username = request.form.get('username')
-            password = request.form.get('password')
+    if request.method == 'POST':
+        username = request.form.get('username')
 
-            user = User.query.filter_by(username=username, password=password).first()
+        user = User.query.filter_by(username=username).first()
 
-            if user:
-                session['user_id'] = user.id
-                return redirect('/dashboard')
+        if user:
+            session['user_id'] = user.id
+            return redirect('/dashboard')
 
-            return render_template('login.html', error="Invalid credentials")
+        return render_template('login.html', error="User not found")
 
-        return render_template('login.html')
-
-    except Exception as e:
-        return f"Login error: {e}"
+    return render_template('login.html')
 
 
 # -----------------------

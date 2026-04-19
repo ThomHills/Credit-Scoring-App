@@ -22,3 +22,8 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100))
+    password = db.Column(db.String(100))  # 👈 ADD THIS
