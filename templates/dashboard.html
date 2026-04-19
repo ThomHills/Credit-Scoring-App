@@ -105,7 +105,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // SAFE DATA FROM BACKEND
+    // SAFE DATA (VERY IMPORTANT)
     const low = {{ low | default(0) }};
     const medium = {{ medium | default(0) }};
     const high = {{ high | default(0) }};
@@ -114,7 +114,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const fpr = {{ (fpr or []) | tojson }};
     const tpr = {{ (tpr or []) | tojson }};
-    // RISK BAR CHART
+
+    console.log("DEBUG:", {low, medium, high, approved, rejected, fpr, tpr});
+
+    // -------------------
+    // RISK CHART
+    // -------------------
     const riskEl = document.getElementById('riskChart');
     if (riskEl) {
         new Chart(riskEl, {
@@ -123,13 +128,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 labels: ['Low', 'Medium', 'High'],
                 datasets: [{
                     label: 'Applications',
-                    data: [low || 0, medium || 0, high || 0]
+                    data: [low, medium, high]
                 }]
             }
         });
     }
 
-    // DECISION PIE CHART
+    // -------------------
+    // DECISION CHART
+    // -------------------
     const decisionEl = document.getElementById('decisionChart');
     if (decisionEl) {
         new Chart(decisionEl, {
@@ -137,14 +144,16 @@ document.addEventListener("DOMContentLoaded", function () {
             data: {
                 labels: ['Approved', 'Rejected'],
                 datasets: [{
-                    data: [approved || 0, rejected || 0]
+                    data: [approved, rejected]
                 }]
             }
         });
     }
 
-    // ROC CURVE
-    <const rocEl = document.getElementById('rocChart');>
+    // -------------------
+    // ROC CHART
+    // -------------------
+    const rocEl = document.getElementById('rocChart');
     if (rocEl && fpr.length > 0) {
         new Chart(rocEl, {
             type: 'line',
@@ -153,8 +162,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 datasets: [{
                     label: 'ROC Curve',
                     data: tpr,
-                    fill: false,
-                    tension: 0.1
+                    fill: false
                 }]
             }
         });
