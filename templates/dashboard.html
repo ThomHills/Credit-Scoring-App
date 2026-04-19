@@ -2,8 +2,6 @@
 <html>
 <head>
     <title>Lender Dashboard</title>
-
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -18,7 +16,7 @@
 
     <br><br>
 
-    <!-- SUMMARY CARDS -->
+    <!-- SUMMARY -->
     <div style="display:flex; gap:15px; margin-bottom:20px;">
 
         <div style="flex:1; background:white; padding:15px; border-radius:8px;">
@@ -39,16 +37,21 @@
     </div>
 
     <!-- CHARTS -->
-    <div style="display:flex; gap:20px; margin-bottom:20px;">
+    <div style="display:flex; flex-wrap:wrap; gap:20px; margin-bottom:20px;">
 
-        <div style="flex:1; background:white; padding:20px; border-radius:8px;">
+        <div style="flex:1; min-width:300px; background:white; padding:20px; border-radius:8px;">
             <h3>Risk Distribution</h3>
             <canvas id="riskChart"></canvas>
         </div>
 
-        <div style="flex:1; background:white; padding:20px; border-radius:8px;">
-            <h3>Approval Decisions</h3>
+        <div style="flex:1; min-width:300px; background:white; padding:20px; border-radius:8px;">
+            <h3>Decision Split</h3>
             <canvas id="decisionChart"></canvas>
+        </div>
+
+        <div style="flex:1; min-width:300px; background:white; padding:20px; border-radius:8px;">
+            <h3>ROC Curve (AUC: {{ auc }})</h3>
+            <canvas id="rocChart"></canvas>
         </div>
 
     </div>
@@ -102,18 +105,20 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // SAFE VALUES (no undefined)
+    // SAFE DATA FROM BACKEND
     const low = {{ low | default(0) }};
     const medium = {{ medium | default(0) }};
     const high = {{ high | default(0) }};
     const approved = {{ approved | default(0) }};
     const rejected = {{ rejected | default(0) }};
 
-    // ---- RISK BAR CHART ----
-    const riskCanvas = document.getElementById('riskChart');
+    const fpr = {{ fpr | tojson }};
+    const tpr = {{ tpr | tojson }};
 
-    if (riskCanvas) {
-        new Chart(riskCanvas, {
+    // RISK BAR CHART
+    const riskEl = document.getElementById('riskChart');
+    if (riskEl) {
+        new Chart(riskEl, {
             type: 'bar',
             data: {
                 labels: ['Low', 'Medium', 'High'],
@@ -121,27 +126,37 @@ document.addEventListener("DOMContentLoaded", function () {
                     label: 'Applications',
                     data: [low || 0, medium || 0, high || 0]
                 }]
-            },
-            options: {
-                responsive: true
             }
         });
     }
 
-    // ---- DECISION PIE CHART ----
-    const decisionCanvas = document.getElementById('decisionChart');
-
-    if (decisionCanvas) {
-        new Chart(decisionCanvas, {
+    // DECISION PIE CHART
+    const decisionEl = document.getElementById('decisionChart');
+    if (decisionEl) {
+        new Chart(decisionEl, {
             type: 'pie',
             data: {
                 labels: ['Approved', 'Rejected'],
                 datasets: [{
                     data: [approved || 0, rejected || 0]
                 }]
-            },
-            options: {
-                responsive: true
+            }
+        });
+    }
+
+    // ROC CURVE
+    const rocEl = document.getElementById('rocChart');
+    if (rocEl && fpr.length > 0) {
+        new Chart(rocEl, {
+            type: 'line',
+            data: {
+                labels: fpr,
+                datasets: [{
+                    label: 'ROC Curve',
+                    data: tpr,
+                    fill: false,
+                    tension: 0.1
+                }]
             }
         });
     }

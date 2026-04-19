@@ -1,45 +1,48 @@
-from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from app.model import predict_credit_score
-from app.models import Application
+from app.models import Application, User
 from app.db import db
-from app.models import User
+
+import pickle
+import os
 
 main = Blueprint('main', __name__)
 
-USERNAME = "admin"
-PASSWORD = "1234"
 
-# --- LOGIN ---
-@main.route('/login', methods=['GET', 'POST'])
+# -----------------------
+# LOGIN
+# -----------------------
+@main.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=username, password=password).first()
 
-        if user and user.check_password(password):
-            session['user'] = user.id
-            return redirect(url_for('main.dashboard'))
+        if user:
+            session['user_id'] = user.id
+            return redirect('/dashboard')
 
-        return "Invalid credentials"
+        return render_template('login.html', error="Invalid credentials")
 
     return render_template('login.html')
 
 
-# --- LOGOUT ---
+# -----------------------
+# LOGOUT
+# -----------------------
 @main.route('/logout')
 def logout():
-    session.pop('user', None)
-    return redirect(url_for('main.login'))
+    session.clear()
+    return redirect('/')
 
 
-# --- DASHBOARD (NOW WORKS FOR BOTH / AND /dashboard) ---
-@main.route('/')
+# -----------------------
+# DASHBOARD
+# -----------------------
 @main.route('/dashboard')
 def dashboard():
-    if 'user' not in session:
-        return redirect(url_for('main.login'))
 
     apps = Application.query.all()
 
@@ -48,11 +51,27 @@ def dashboard():
     avg_score = round(sum([a.score for a in apps]) / total, 2) if total > 0 else 0
 
     approved = len([a for a in apps if a.decision == "Approved"])
+    rejected = len([a for a in apps if a.decision == "Rejected"])
+
     approval_rate = round((approved / total) * 100, 2) if total > 0 else 0
 
     low = len([a for a in apps if a.risk == "Low"])
     medium = len([a for a in apps if a.risk == "Medium"])
     high = len([a for a in apps if a.risk == "High"])
+
+    # ---- LOAD ROC DATA ----
+    roc_path = os.path.join(os.path.dirname(__file__), "..", "roc_data.pkl")
+
+    try:
+        with open(roc_path, "rb") as f:
+            roc_data = pickle.load(f)
+
+        fpr = roc_data["fpr"]
+        tpr = roc_data["tpr"]
+        auc_score = round(roc_data["auc"], 3)
+
+    except:
+        fpr, tpr, auc_score = [], [], 0
 
     return render_template(
         'dashboard.html',
@@ -60,28 +79,31 @@ def dashboard():
         total=total,
         avg_score=avg_score,
         approval_rate=approval_rate,
+        approved=approved,
+        rejected=rejected,
         low=low,
         medium=medium,
         high=high,
-        approved=approved,
-        rejected=(total - approved)
+        fpr=fpr,
+        tpr=tpr,
+        auc=auc_score
     )
 
 
-# --- NEW APPLICATION PAGE ---
+# -----------------------
+# NEW APPLICATION PAGE
+# -----------------------
 @main.route('/new')
-def new_app():
-    if 'user' not in session:
-        return redirect(url_for('main.login'))
+def new_application():
     return render_template('index.html')
 
 
-# --- SCORE (API) ---
-from app.models import Application
-from app.db import db
-
+# -----------------------
+# SCORE + SAVE
+# -----------------------
 @main.route('/score', methods=['POST'])
 def score():
+
     data = request.get_json()
 
     try:
@@ -90,16 +112,19 @@ def score():
         savings = float(data.get('savings', 0))
         missed = int(data.get('missed_payments', 0))
 
-        # 👉 1. Run ML model
+        # ---- ML MODEL ----
         result = predict_credit_score(income, expenses, savings, missed)
 
-        # 👉 2. SAVE TO DATABASE (INSERT HERE)
+        if "error" in result:
+            return jsonify(result)
+
+        # ---- SAVE TO DB ----
         new_app = Application(
             income=income,
             expenses=expenses,
             savings=savings,
             missed=missed,
-            score=float(result["score"]),   # 👈 IMPORTANT
+            score=float(result["score"]),
             risk=result["risk"],
             decision="Pending"
         )
@@ -107,56 +132,31 @@ def score():
         db.session.add(new_app)
         db.session.commit()
 
-        # 👉 3. Return result to frontend
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
-        db.session.add(new_app)
-        db.session.commit()
-
         return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)})
 
 
-# --- APPROVE / REJECT ---
-@main.route('/decide/<int:id>/<action>')
-def decide(id, action):
-    if 'user' not in session:
-        return redirect(url_for('main.login'))
-
-    app_item = Application.query.get(id)
-
-    if app_item:
-        if action == "approve":
-            app_item.decision = "Approved"
-        elif action == "reject":
-            app_item.decision = "Rejected"
-
+# -----------------------
+# APPROVE
+# -----------------------
+@main.route('/decide/<int:id>/approve')
+def approve(id):
+    app = Application.query.get(id)
+    if app:
+        app.decision = "Approved"
         db.session.commit()
+    return redirect('/dashboard')
 
-    return redirect(url_for('main.dashboard'))
 
-@main.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        # check if user exists
-        existing = User.query.filter_by(username=username).first()
-        if existing:
-            return "User already exists"
-
-        new_user = User(username=username)
-        new_user.set_password(password)
-
-        db.session.add(new_user)
+# -----------------------
+# REJECT
+# -----------------------
+@main.route('/decide/<int:id>/reject')
+def reject(id):
+    app = Application.query.get(id)
+    if app:
+        app.decision = "Rejected"
         db.session.commit()
-
-        return redirect(url_for('main.login'))
-
-    return render_template('signup.html')
+    return redirect('/dashboard')
