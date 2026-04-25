@@ -1,37 +1,10 @@
-from flask import Flask
-from app.routes import main
+from app import create_app
 from app.db import db
-import os
 
-def create_app():
-    app = Flask(__name__)
-    app.secret_key = "supersecretkey"
-
-    # --- DATABASE CONFIG ---
-    db_url = os.environ.get("DATABASE_URL")
-
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-    # 👇 fallback so app never crashes
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///local.db"
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # --- INIT DB ---
-    db.init_app(app)
-
-    # --- IMPORT MODELS ---
-    from app import models
-
-    with app.app_context():
-        db.create_all()
-
-    # --- REGISTER ROUTES ---
-    app.register_blueprint(main)
-
-    return app
-
-# 👇 REQUIRED for gunicorn
 app = create_app()
 
-app.run(host="0.0.0.0", port=10000, debug=True)
+with app.app_context():
+    db.create_all()
+
+if __name__ == "__main__":
+    app.run(debug=True)
