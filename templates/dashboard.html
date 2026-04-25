@@ -7,66 +7,100 @@
 
 <body style="font-family:Arial; background:#f5f7fa; margin:0;">
 
-<div style="max-width:1200px; margin:auto; padding:20px;">
+<div style="max-width:1100px; margin:auto; padding:20px;">
 
-<h2>Dashboard</h2>
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Credit Risk Dashboard</h2>
 
-<!-- TABS -->
-<button onclick="showTab('overview')">Overview</button>
-<button onclick="showTab('risk')">Risk</button>
-<button onclick="showTab('model')">Model</button>
-<button onclick="showTab('data')">Data</button>
+        <div>
+            <a href="/new" style="margin-right:10px;">+ New Application</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
 
-<hr>
+    <hr>
 
-<!-- OVERVIEW -->
-<div id="overview" class="tab">
+    <!-- TABS -->
+    <div style="margin-bottom:20px;">
+        <button onclick="showTab('overview')">Overview</button>
+        <button onclick="showTab('risk')">Risk</button>
+        <button onclick="showTab('model')">Model</button>
+        <button onclick="showTab('data')">Applications</button>
+    </div>
 
-<p>Total: {{ total }}</p>
-<p>Avg Score: {{ avg_score }}</p>
-<p>Approval Rate: {{ approval_rate }}%</p>
-<p>Avg PD: {{ avg_pd }}</p>
+    <!-- OVERVIEW -->
+    <div id="overview" class="tab">
 
-<div style="height:300px"><canvas id="trendChart"></canvas></div>
-<div style="height:300px"><canvas id="scoreDistChart"></canvas></div>
+        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+            <div style="background:white; padding:10px; border-radius:8px;">Total: {{ total }}</div>
+            <div style="background:white; padding:10px; border-radius:8px;">Avg Score: {{ avg_score }}</div>
+            <div style="background:white; padding:10px; border-radius:8px;">Approval Rate: {{ approval_rate }}%</div>
+            <div style="background:white; padding:10px; border-radius:8px;">Avg PD: {{ avg_pd }}</div>
+        </div>
 
-</div>
+        <br>
 
-<!-- RISK -->
-<div id="risk" class="tab" style="display:none">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div style="background:white; height:300px;"><canvas id="trendChart"></canvas></div>
+            <div style="background:white; height:300px;"><canvas id="scoreDistChart"></canvas></div>
+        </div>
 
-<div style="height:300px"><canvas id="riskChart"></canvas></div>
-<div style="height:300px"><canvas id="decisionChart"></canvas></div>
-<div style="height:300px"><canvas id="riskDecisionChart"></canvas></div>
+    </div>
 
-</div>
+    <!-- RISK -->
+    <div id="risk" class="tab" style="display:none">
 
-<!-- MODEL -->
-<div id="model" class="tab" style="display:none">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div style="background:white; height:300px;"><canvas id="riskChart"></canvas></div>
+            <div style="background:white; height:300px;"><canvas id="decisionChart"></canvas></div>
+            <div style="background:white; height:300px;"><canvas id="riskDecisionChart"></canvas></div>
+        </div>
 
-<h3>AUC: {{ auc }}</h3>
-<div style="height:400px"><canvas id="rocChart"></canvas></div>
+    </div>
 
-</div>
+    <!-- MODEL -->
+    <div id="model" class="tab" style="display:none">
 
-<!-- DATA -->
-<div id="data" class="tab" style="display:none">
+        <h3>AUC: {{ auc }}</h3>
 
-<table border="1">
-<tr><th>ID</th><th>Score</th><th>Risk</th><th>Decision</th></tr>
+        <div style="background:white; height:350px;">
+            <canvas id="rocChart"></canvas>
+        </div>
 
-{% for a in apps %}
-<tr>
-<td>{{ a.id }}</td>
-<td>{{ a.score }}</td>
-<td>{{ a.risk }}</td>
-<td>{{ a.decision }}</td>
-</tr>
-{% endfor %}
+    </div>
 
-</table>
+    <!-- DATA -->
+    <div id="data" class="tab" style="display:none">
 
-</div>
+        <h3>Applications</h3>
+
+        <div style="overflow-x:auto;">
+            <table border="1" cellpadding="5" style="width:100%; background:white;">
+                <tr>
+                    <th>ID</th>
+                    <th>Score</th>
+                    <th>Risk</th>
+                    <th>Decision</th>
+                    <th>Action</th>
+                </tr>
+
+                {% for a in apps %}
+                <tr>
+                    <td>{{ a.id }}</td>
+                    <td>{{ a.score }}</td>
+                    <td>{{ a.risk }}</td>
+                    <td>{{ a.decision }}</td>
+                    <td>
+                        <a href="/decide/{{ a.id }}/approve">Approve</a> |
+                        <a href="/decide/{{ a.id }}/reject">Reject</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+    </div>
 
 </div>
 
@@ -77,11 +111,10 @@ function showTab(id){
     document.getElementById(id).style.display="block";
 }
 
-// SAFE DATA
+// DATA
 const low = {{ low | default(0) }};
 const medium = {{ medium | default(0) }};
 const high = {{ high | default(0) }};
-
 const approved = {{ approved | default(0) }};
 const rejected = {{ rejected | default(0) }};
 
