@@ -9,233 +9,155 @@
 
 <div style="max-width:1200px; margin:auto; padding:20px;">
 
-    <h2>Credit Risk Dashboard</h2>
+<h2>Dashboard</h2>
 
-    <a href="/new">+ New Application</a> |
-    <a href="/logout">Logout</a>
+<!-- TABS -->
+<button onclick="showTab('overview')">Overview</button>
+<button onclick="showTab('risk')">Risk</button>
+<button onclick="showTab('model')">Model</button>
+<button onclick="showTab('data')">Data</button>
 
-    <hr>
+<hr>
 
-    <!-- TABS -->
-    <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <button onclick="showTab('overview')">Overview</button>
-        <button onclick="showTab('risk')">Risk Analysis</button>
-        <button onclick="showTab('model')">Model Performance</button>
-        <button onclick="showTab('data')">Applications</button>
-    </div>
+<!-- OVERVIEW -->
+<div id="overview" class="tab">
 
-    <!-- ===================== -->
-    <!-- OVERVIEW TAB -->
-    <!-- ===================== -->
-    <div id="overview" class="tab">
+<p>Total: {{ total }}</p>
+<p>Avg Score: {{ avg_score }}</p>
+<p>Approval Rate: {{ approval_rate }}%</p>
+<p>Avg PD: {{ avg_pd }}</p>
 
-        <div style="display:flex; gap:20px; flex-wrap:wrap;">
-            <div style="background:white; padding:15px; border-radius:10px;">
-                <b>Total</b><br>{{ total }}
-            </div>
+<div style="height:300px"><canvas id="trendChart"></canvas></div>
+<div style="height:300px"><canvas id="scoreDistChart"></canvas></div>
 
-            <div style="background:white; padding:15px; border-radius:10px;">
-                <b>Avg Score</b><br>{{ avg_score }}
-            </div>
+</div>
 
-            <div style="background:white; padding:15px; border-radius:10px;">
-                <b>Approval Rate</b><br>{{ approval_rate }}%
-            </div>
+<!-- RISK -->
+<div id="risk" class="tab" style="display:none">
 
-            <div style="background:white; padding:15px; border-radius:10px;">
-                <b>Avg PD</b><br>{{ avg_pd }}
-            </div>
-        </div>
+<div style="height:300px"><canvas id="riskChart"></canvas></div>
+<div style="height:300px"><canvas id="decisionChart"></canvas></div>
+<div style="height:300px"><canvas id="riskDecisionChart"></canvas></div>
 
-        <br>
+</div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap:20px;">
-            <div style="background:white; padding:15px; height:300px;">
-                <canvas id="trendChart"></canvas>
-            </div>
+<!-- MODEL -->
+<div id="model" class="tab" style="display:none">
 
-            <div style="background:white; padding:15px; height:300px;">
-                <canvas id="scoreDistChart"></canvas>
-            </div>
-        </div>
+<h3>AUC: {{ auc }}</h3>
+<div style="height:400px"><canvas id="rocChart"></canvas></div>
 
-    </div>
+</div>
 
-    <!-- ===================== -->
-    <!-- RISK TAB -->
-    <!-- ===================== -->
-    <div id="risk" class="tab" style="display:none;">
+<!-- DATA -->
+<div id="data" class="tab" style="display:none">
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap:20px;">
+<table border="1">
+<tr><th>ID</th><th>Score</th><th>Risk</th><th>Decision</th></tr>
 
-            <div style="background:white; padding:15px; height:300px;">
-                <canvas id="riskChart"></canvas>
-            </div>
+{% for a in apps %}
+<tr>
+<td>{{ a.id }}</td>
+<td>{{ a.score }}</td>
+<td>{{ a.risk }}</td>
+<td>{{ a.decision }}</td>
+</tr>
+{% endfor %}
 
-            <div style="background:white; padding:15px; height:300px;">
-                <canvas id="decisionChart"></canvas>
-            </div>
+</table>
 
-            <div style="background:white; padding:15px; height:300px;">
-                <canvas id="riskDecisionChart"></canvas>
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- MODEL TAB -->
-    <!-- ===================== -->
-    <div id="model" class="tab" style="display:none;">
-
-        <h3>ROC Curve (AUC: {{ auc }})</h3>
-
-        <div style="background:white; padding:15px; height:400px;">
-            <canvas id="rocChart"></canvas>
-        </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- DATA TAB -->
-    <!-- ===================== -->
-    <div id="data" class="tab" style="display:none;">
-
-        <h3>Applications</h3>
-
-        <div style="overflow-x:auto;">
-            <table border="1" cellpadding="5" style="background:white; width:100%;">
-                <tr>
-                    <th>ID</th>
-                    <th>Score</th>
-                    <th>Risk</th>
-                    <th>Decision</th>
-                    <th>Action</th>
-                </tr>
-
-                {% for a in apps %}
-                <tr>
-                    <td>{{ a.id }}</td>
-                    <td>{{ a.score }}</td>
-                    <td>{{ a.risk }}</td>
-                    <td>{{ a.decision }}</td>
-                    <td>
-                        <a href="/decide/{{ a.id }}/approve">Approve</a> |
-                        <a href="/decide/{{ a.id }}/reject">Reject</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-        </div>
-
-    </div>
+</div>
 
 </div>
 
 <script>
-function showTab(tabId) {
-    document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
-    document.getElementById(tabId).style.display = "block";
+// TAB SWITCH
+function showTab(id){
+    document.querySelectorAll(".tab").forEach(t => t.style.display="none");
+    document.getElementById(id).style.display="block";
 }
 
-// DATA
-const low = {{ low }};
-const medium = {{ medium }};
-const high = {{ high }};
-const approved = {{ approved }};
-const rejected = {{ rejected }};
+// SAFE DATA
+const low = {{ low | default(0) }};
+const medium = {{ medium | default(0) }};
+const high = {{ high | default(0) }};
+
+const approved = {{ approved | default(0) }};
+const rejected = {{ rejected | default(0) }};
+
 const scoreBins = {{ score_bins | tojson }};
 const riskData = {{ risk_approval | tojson }};
 const trend = {{ (recent_scores or []) | tojson }};
 const fpr = {{ (fpr or []) | tojson }};
 const tpr = {{ (tpr or []) | tojson }};
 
-// COMMON OPTIONS
-const options = {
-    responsive: true,
-    maintainAspectRatio: false
+// SAFE STRUCTURE
+const safeRisk = {
+    Low: riskData.Low || {Approved:0,Rejected:0},
+    Medium: riskData.Medium || {Approved:0,Rejected:0},
+    High: riskData.High || {Approved:0,Rejected:0}
 };
 
-// RISK
+const options = { responsive:true, maintainAspectRatio:false };
+
+// CHARTS
 new Chart(document.getElementById('riskChart'), {
-    type: 'bar',
-    data: {
-        labels: ['Low','Medium','High'],
-        datasets: [{ data: [low, medium, high] }]
-    },
+    type:'bar',
+    data:{ labels:['Low','Medium','High'],
+    datasets:[{label:'Risk',data:[low,medium,high]}]},
     options
 });
 
-// DECISION
 new Chart(document.getElementById('decisionChart'), {
-    type: 'pie',
-    data: {
-        labels: ['Approved','Rejected'],
-        datasets: [{ data: [approved, rejected] }]
-    },
+    type:'pie',
+    data:{ labels:['Approved','Rejected'],
+    datasets:[{data:[approved,rejected]}]},
     options
 });
 
-// SCORE DIST
 new Chart(document.getElementById('scoreDistChart'), {
-    type: 'bar',
-    data: {
-        labels: Object.keys(scoreBins),
-        datasets: [{ data: Object.values(scoreBins) }]
-    },
+    type:'bar',
+    data:{ labels:Object.keys(scoreBins),
+    datasets:[{label:'Scores',data:Object.values(scoreBins)}]},
     options
 });
 
-// RISK vs DECISION
 new Chart(document.getElementById('riskDecisionChart'), {
-    type: 'bar',
-    data: {
-        labels: ['Low','Medium','High'],
-        datasets: [
-            {
-                label: 'Approved',
-                data: [
-                    riskData.Low.Approved,
-                    riskData.Medium.Approved,
-                    riskData.High.Approved
-                ]
-            },
-            {
-                label: 'Rejected',
-                data: [
-                    riskData.Low.Rejected,
-                    riskData.Medium.Rejected,
-                    riskData.High.Rejected
-                ]
-            }
+    type:'bar',
+    data:{
+        labels:['Low','Medium','High'],
+        datasets:[
+            {label:'Approved',data:[
+                safeRisk.Low.Approved,
+                safeRisk.Medium.Approved,
+                safeRisk.High.Approved
+            ]},
+            {label:'Rejected',data:[
+                safeRisk.Low.Rejected,
+                safeRisk.Medium.Rejected,
+                safeRisk.High.Rejected
+            ]}
         ]
     },
     options
 });
 
-// TREND
-if (trend.length > 0) {
-    new Chart(document.getElementById('trendChart'), {
-        type: 'line',
-        data: {
-            labels: trend.map((_, i) => i + 1),
-            datasets: [{ data: trend }]
-        },
-        options
-    });
+if(trend.length){
+new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{ labels:trend.map((_,i)=>i+1),
+    datasets:[{label:'Trend',data:trend}]},
+    options
+});
 }
 
-// ROC
-if (fpr.length > 0) {
-    new Chart(document.getElementById('rocChart'), {
-        type: 'line',
-        data: {
-            labels: fpr,
-            datasets: [{ label: 'ROC', data: tpr }]
-        },
-        options
-    });
+if(fpr.length){
+new Chart(document.getElementById('rocChart'), {
+    type:'line',
+    data:{ labels:fpr,
+    datasets:[{label:'ROC',data:tpr}]},
+    options
+});
 }
 </script>
 
