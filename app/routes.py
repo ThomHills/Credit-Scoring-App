@@ -43,12 +43,11 @@ def register():
             username = request.form.get('username')
             password = request.form.get('password')
 
-            existing = User.query.filter_by(username=username).first()
-            if existing:
+            if User.query.filter_by(username=username).first():
                 return render_template('register.html', error="User already exists")
 
-            user = User(username=username, password=password)
-            db.session.add(user)
+            new_user = User(username=username, password=password)
+            db.session.add(new_user)
             db.session.commit()
 
             return redirect('/')
@@ -78,7 +77,9 @@ def dashboard():
 
         total = len(apps)
 
-        avg_score = round(sum([float(a.score) for a in apps]) / total, 2) if total > 0 else 0
+        avg_score = round(
+            sum([float(a.score) for a in apps]) / total, 2
+        ) if total > 0 else 0
 
         approved = len([a for a in apps if a.decision == "Approved"])
         rejected = len([a for a in apps if a.decision == "Rejected"])
@@ -90,7 +91,47 @@ def dashboard():
         high = len([a for a in apps if a.risk == "High"])
 
         # -----------------------
-        # LOAD ROC SAFELY
+        # EXTRA ANALYTICS
+        # -----------------------
+        avg_pd = round(
+            sum([(100 - float(a.score)) / 100 for a in apps]) / total, 3
+        ) if total > 0 else 0
+
+        score_bins = {
+            "0-20": 0,
+            "20-40": 0,
+            "40-60": 0,
+            "60-80": 0,
+            "80-100": 0
+        }
+
+        for a in apps:
+            s = float(a.score)
+            if s <= 20:
+                score_bins["0-20"] += 1
+            elif s <= 40:
+                score_bins["20-40"] += 1
+            elif s <= 60:
+                score_bins["40-60"] += 1
+            elif s <= 80:
+                score_bins["60-80"] += 1
+            else:
+                score_bins["80-100"] += 1
+
+        risk_approval = {
+            "Low": {"Approved": 0, "Rejected": 0},
+            "Medium": {"Approved": 0, "Rejected": 0},
+            "High": {"Approved": 0, "Rejected": 0}
+        }
+
+        for a in apps:
+            if a.risk in risk_approval and a.decision in ["Approved", "Rejected"]:
+                risk_approval[a.risk][a.decision] += 1
+
+        recent_scores = [float(a.score) for a in apps[-10:]]
+
+        # -----------------------
+        # LOAD ROC DATA
         # -----------------------
         fpr, tpr, auc_score = [], [], 0
 
@@ -100,14 +141,14 @@ def dashboard():
 
             if os.path.exists(roc_path):
                 with open(roc_path, "rb") as f:
-                    roc_data = pickle.load(f)
+                    roc = pickle.load(f)
 
-                fpr = roc_data.get("fpr", [])
-                tpr = roc_data.get("tpr", [])
-                auc_score = round(float(roc_data.get("auc", 0)), 3)
+                fpr = roc.get("fpr", [])
+                tpr = roc.get("tpr", [])
+                auc_score = round(float(roc.get("auc", 0)), 3)
 
         except Exception as e:
-            print("ROC load error:", e)
+            print("ROC error:", e)
 
         return render_template(
             "dashboard.html",
@@ -120,6 +161,10 @@ def dashboard():
             low=low,
             medium=medium,
             high=high,
+            avg_pd=avg_pd,
+            score_bins=score_bins,
+            risk_approval=risk_approval,
+            recent_scores=recent_scores,
             fpr=fpr,
             tpr=tpr,
             auc=auc_score
@@ -138,20 +183,20 @@ def new_application():
 
 
 # -----------------------
-# SCORE + SAVE (UPDATED)
+# SCORE
 # -----------------------
 @main.route('/score', methods=['POST'])
 def score():
     try:
         data = request.get_json() or {}
 
-        # BASIC INPUTS
+        # BASIC
         income = float(data.get('income', 0))
         expenses = float(data.get('expenses', 0))
         savings = float(data.get('savings', 0))
         missed = int(data.get('missed_payments', 0))
 
-        # NEW ADVANCED FEATURES
+        # ADVANCED
         total_debt = float(data.get('total_debt', 0))
         credit_limit = float(data.get('credit_limit', 1))
         used_credit = float(data.get('used_credit', 0))
@@ -161,7 +206,6 @@ def score():
         job_years = int(data.get('job_years', 0))
         residence_years = int(data.get('residence_years', 0))
 
-        # MODEL PREDICTION
         result = predict_credit_score(
             income, expenses, savings, missed,
             total_debt, credit_limit, used_credit,
@@ -170,16 +214,15 @@ def score():
         )
 
         if not result or "error" in result:
-            return jsonify({"error": "Model failed"})
+            return jsonify({"error": "Model error"})
 
-        # SAVE TO DATABASE
         new_app = Application(
             income=income,
             expenses=expenses,
             savings=savings,
             missed=missed,
-            score=float(result.get("score", 0)),
-            risk=result.get("risk", "Unknown"),
+            score=float(result["score"]),
+            risk=result["risk"],
             decision="Pending"
         )
 
