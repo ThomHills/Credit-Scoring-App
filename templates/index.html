@@ -1,78 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>New Credit Application</title>
+    <title>New Application</title>
 </head>
 
 <body style="font-family:Arial; background:#f5f7fa;">
 
-<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
-    <h2>New Application</h2>
+<div style="max-width:500px; margin:auto; margin-top:40px; background:white; padding:25px; border-radius:10px;">
+    
+    <h2>New Loan Application</h2>
 
-    <a href="/dashboard">Back</a><br><br>
+    <a href="/dashboard">← Back to Dashboard</a><br><br>
 
     <form id="form">
-        <input id="income" placeholder="Income" required><br><br>
-        <input id="expenses" placeholder="Expenses" required><br><br>
-        <input id="savings" placeholder="Savings" required><br><br>
-        <input id="missed" placeholder="Missed Payments" required><br><br>
 
-        <button type="submit">Submit</button>
+        <!-- BASIC -->
+        <h3>Basic Financials</h3>
+        <input id="income" placeholder="Income"><br><br>
+        <input id="expenses" placeholder="Expenses"><br><br>
+        <input id="savings" placeholder="Savings"><br><br>
+        <input id="missed" placeholder="Missed Payments"><br><br>
+
+        <!-- CREDIT -->
+        <h3>Credit Profile</h3>
+        <input id="total_debt" placeholder="Total Debt"><br><br>
+        <input id="credit_limit" placeholder="Credit Limit"><br><br>
+        <input id="used_credit" placeholder="Used Credit"><br><br>
+        <input id="late_payments" placeholder="Late Payments"><br><br>
+
+        <!-- HISTORY -->
+        <h3>History & Activity</h3>
+        <input id="credit_history" placeholder="Credit History (years)"><br><br>
+        <input id="new_accounts" placeholder="New Accounts (last year)"><br><br>
+
+        <!-- STABILITY -->
+        <h3>Stability</h3>
+        <input id="job_years" placeholder="Years in Job"><br><br>
+        <input id="residence_years" placeholder="Years at Residence"><br><br>
+
+        <button type="submit">Submit Application</button>
+
     </form>
 
     <br>
+    <div id="msg" style="font-weight:bold;"></div>
 
-    <!-- RESULTS / ERRORS SHOW HERE -->
-    <div id="msg"></div>
 </div>
 
 <script>
 document.getElementById("form").onsubmit = async (e) => {
     e.preventDefault();
 
-    const msg = document.getElementById("msg");
+    const res = await fetch("/score", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            income: income.value,
+            expenses: expenses.value,
+            savings: savings.value,
+            missed_payments: missed.value,
 
-    msg.innerText = "Loading...";
+            total_debt: total_debt.value,
+            credit_limit: credit_limit.value,
+            used_credit: used_credit.value,
+            late_payments: late_payments.value,
 
-    try {
-        const res = await fetch("/score", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                income: document.getElementById("income").value,
-                expenses: document.getElementById("expenses").value,
-                savings: document.getElementById("savings").value,
-                missed_payments: document.getElementById("missed").value
-            })
-        });
+            credit_history: credit_history.value,
+            new_accounts: new_accounts.value,
 
-        const text = await res.text();
+            job_years: job_years.value,
+            residence_years: residence_years.value
+        })
+    });
 
-        // show raw response for debugging
-        console.log("RAW RESPONSE:", text);
+    const data = await res.json();
 
-        const data = JSON.parse(text);
-
-        if (data.error) {
-            msg.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
-            return;
-        }
-
-        msg.innerHTML = `
-            <p><strong>Score:</strong> ${data.score}</p>
-            <p><strong>Risk:</strong> ${data.risk}</p>
-            <p><strong>Probability of Default:</strong> ${data.prob_default}</p>
-        `;
-
-        // optional redirect
-        setTimeout(() => {
-            window.location = "/dashboard";
-        }, 3000);
-
-    } catch (err) {
-        msg.innerHTML = `<p style="color:red;">ERROR: ${err}</p>`;
-        console.error(err);
+    if (data.error) {
+        msg.style.color = "red";
+        msg.innerText = data.error;
+        return;
     }
+
+    msg.style.color = "green";
+    msg.innerText = 
+        "Score: " + data.score + 
+        " | Risk: " + data.risk + 
+        " | PD: " + data.prob_default;
+
+    setTimeout(() => {
+        window.location = "/dashboard";
+    }, 2000);
 };
 </script>
 

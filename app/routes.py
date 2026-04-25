@@ -8,10 +8,34 @@ import os
 
 main = Blueprint('main', __name__)
 
-# --------------------------------
-# REGISTER
-# -------------------------------
 
+# -----------------------
+# LOGIN
+# -----------------------
+@main.route('/', methods=['GET', 'POST'])
+def login():
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+
+            user = User.query.filter_by(username=username, password=password).first()
+
+            if user:
+                session['user_id'] = user.id
+                return redirect('/dashboard')
+
+            return render_template('login.html', error="Invalid credentials")
+
+        return render_template('login.html')
+
+    except Exception as e:
+        return f"Login error: {e}"
+
+
+# -----------------------
+# REGISTER
+# -----------------------
 @main.route('/register', methods=['GET', 'POST'])
 def register():
     try:
@@ -19,12 +43,10 @@ def register():
             username = request.form.get('username')
             password = request.form.get('password')
 
-            # check if user exists
             existing = User.query.filter_by(username=username).first()
             if existing:
                 return render_template('register.html', error="User already exists")
 
-            # create user
             user = User(username=username, password=password)
             db.session.add(user)
             db.session.commit()
@@ -35,23 +57,6 @@ def register():
 
     except Exception as e:
         return f"Register error: {e}"
-# -----------------------
-# LOGIN
-# -----------------------
-@main.route('/', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-
-        user = User.query.filter_by(username=username).first()
-
-        if user:
-            session['user_id'] = user.id
-            return redirect('/dashboard')
-
-        return render_template('login.html', error="User not found")
-
-    return render_template('login.html')
 
 
 # -----------------------
@@ -133,25 +138,41 @@ def new_application():
 
 
 # -----------------------
-# SCORE + SAVE
+# SCORE + SAVE (UPDATED)
 # -----------------------
 @main.route('/score', methods=['POST'])
 def score():
     try:
         data = request.get_json() or {}
 
+        # BASIC INPUTS
         income = float(data.get('income', 0))
         expenses = float(data.get('expenses', 0))
         savings = float(data.get('savings', 0))
         missed = int(data.get('missed_payments', 0))
 
-        # ---- MODEL ----
-        result = predict_credit_score(income, expenses, savings, missed)
+        # NEW ADVANCED FEATURES
+        total_debt = float(data.get('total_debt', 0))
+        credit_limit = float(data.get('credit_limit', 1))
+        used_credit = float(data.get('used_credit', 0))
+        late_payments = int(data.get('late_payments', 0))
+        credit_history = int(data.get('credit_history', 1))
+        new_accounts = int(data.get('new_accounts', 0))
+        job_years = int(data.get('job_years', 0))
+        residence_years = int(data.get('residence_years', 0))
+
+        # MODEL PREDICTION
+        result = predict_credit_score(
+            income, expenses, savings, missed,
+            total_debt, credit_limit, used_credit,
+            late_payments, credit_history,
+            new_accounts, job_years, residence_years
+        )
 
         if not result or "error" in result:
             return jsonify({"error": "Model failed"})
 
-        # ---- SAVE ----
+        # SAVE TO DATABASE
         new_app = Application(
             income=income,
             expenses=expenses,
