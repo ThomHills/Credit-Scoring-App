@@ -1,59 +1,80 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>New Credit Application</title>
+</head>
+
 <body style="font-family:Arial; background:#f5f7fa;">
 
-<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+<div style="max-width:420px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+
     <h2>New Credit Application</h2>
 
-    <a href="/dashboard">Back</a><br><br>
+    <a href="/dashboard">← Back to Dashboard</a><br><br>
 
     <form id="form">
 
-        <input id="duration" placeholder="Loan Duration (months)"><br><br>
+        <label>Loan Duration (months)</label><br>
+        <input type="number" id="duration" required><br><br>
 
-        <input id="amount" placeholder="Credit Amount"><br><br>
+        <label>Credit Amount</label><br>
+        <input type="number" id="amount" required><br><br>
 
-        <input id="installment_rate" placeholder="Installment Rate (1-4)"><br><br>
+        <label>Installment Rate (1–4)</label><br>
+        <input type="number" id="installment_rate" min="1" max="4" required><br><br>
 
-        <input id="age" placeholder="Age"><br><br>
+        <label>Age</label><br>
+        <input type="number" id="age" required><br><br>
 
-        <input id="existing_credits" placeholder="Existing Credits"><br><br>
+        <label>Existing Credits</label><br>
+        <input type="number" id="existing_credits" required><br><br>
 
-        <button type="submit">Submit</button>
+        <button type="submit">Submit Application</button>
+
     </form>
 
-    <div id="msg"></div>
+    <br>
+    <div id="msg" style="font-weight:bold;"></div>
+
 </div>
 
 <script>
 document.getElementById("form").onsubmit = async (e) => {
     e.preventDefault();
 
+    const payload = {
+        duration: document.getElementById("duration").value,
+        amount: document.getElementById("amount").value,
+        installment_rate: document.getElementById("installment_rate").value,
+        age: document.getElementById("age").value,
+        existing_credits: document.getElementById("existing_credits").value
+    };
+
+    console.log("SENDING:", payload); // debug
+
     const res = await fetch("/score", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            duration: duration.value,
-            amount: amount.value,
-            installment_rate: installment_rate.value,
-            age: age.value,
-            existing_credits: existing_credits.value
-        })
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
     if (data.error) {
-        msg.innerText = data.error;
+        document.getElementById("msg").innerText = data.error;
         return;
     }
 
-    msg.innerText =
+    document.getElementById("msg").innerText =
         "Score: " + data.score +
         " | Risk: " + data.risk +
         " | PD: " + data.prob_default;
 
-    setTimeout(() => window.location = "/dashboard", 2000);
+    setTimeout(() => {
+        window.location = "/dashboard";
+    }, 2000);
 };
 </script>
 
