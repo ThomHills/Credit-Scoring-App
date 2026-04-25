@@ -29,7 +29,9 @@
         <button onclick="showTab('data')">Applications</button>
     </div>
 
+    <!-- ===================== -->
     <!-- OVERVIEW -->
+    <!-- ===================== -->
     <div id="overview" class="tab">
 
         <div style="display:flex; gap:15px; flex-wrap:wrap;">
@@ -42,35 +44,60 @@
         <br>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div style="background:white; height:300px;"><canvas id="trendChart"></canvas></div>
-            <div style="background:white; height:300px;"><canvas id="scoreDistChart"></canvas></div>
+            <div style="background:white; padding:10px; height:300px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <div style="background:white; padding:10px; height:300px;">
+                <canvas id="scoreDistChart"></canvas>
+            </div>
         </div>
 
     </div>
 
+    <!-- ===================== -->
     <!-- RISK -->
+    <!-- ===================== -->
     <div id="risk" class="tab" style="display:none">
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div style="background:white; height:300px;"><canvas id="riskChart"></canvas></div>
-            <div style="background:white; height:300px;"><canvas id="decisionChart"></canvas></div>
-            <div style="background:white; height:300px;"><canvas id="riskDecisionChart"></canvas></div>
+            <div style="background:white; padding:10px; height:300px;">
+                <canvas id="riskChart"></canvas>
+            </div>
+
+            <div style="background:white; padding:10px; height:300px;">
+                <canvas id="decisionChart"></canvas>
+            </div>
+
+            <div style="background:white; padding:10px; height:300px;">
+                <canvas id="riskDecisionChart"></canvas>
+            </div>
         </div>
 
     </div>
 
+    <!-- ===================== -->
     <!-- MODEL -->
+    <!-- ===================== -->
     <div id="model" class="tab" style="display:none">
 
-        <h3>AUC: {{ auc }}</h3>
+        <h3>Model Performance (AUC: {{ auc }})</h3>
 
-        <div style="background:white; height:350px;">
+        <div style="background:white; padding:10px; height:300px;">
             <canvas id="rocChart"></canvas>
         </div>
 
+        <h3>Feature Importance</h3>
+
+        <div style="background:white; padding:10px; height:350px;">
+            <canvas id="importanceChart"></canvas>
+        </div>
+
     </div>
 
+    <!-- ===================== -->
     <!-- DATA -->
+    <!-- ===================== -->
     <div id="data" class="tab" style="display:none">
 
         <h3>Applications</h3>
@@ -105,13 +132,17 @@
 </div>
 
 <script>
+// --------------------
 // TAB SWITCH
+// --------------------
 function showTab(id){
     document.querySelectorAll(".tab").forEach(t => t.style.display="none");
     document.getElementById(id).style.display="block";
 }
 
-// DATA
+// --------------------
+// SAFE DATA
+// --------------------
 const low = {{ low | default(0) }};
 const medium = {{ medium | default(0) }};
 const high = {{ high | default(0) }};
@@ -123,6 +154,7 @@ const riskData = {{ risk_approval | tojson }};
 const trend = {{ (recent_scores or []) | tojson }};
 const fpr = {{ (fpr or []) | tojson }};
 const tpr = {{ (tpr or []) | tojson }};
+const importance = {{ (feature_importance or {}) | tojson }};
 
 // SAFE STRUCTURE
 const safeRisk = {
@@ -133,65 +165,106 @@ const safeRisk = {
 
 const options = { responsive:true, maintainAspectRatio:false };
 
+// --------------------
 // CHARTS
+// --------------------
+
+// Risk
 new Chart(document.getElementById('riskChart'), {
     type:'bar',
-    data:{ labels:['Low','Medium','High'],
-    datasets:[{label:'Risk',data:[low,medium,high]}]},
+    data:{
+        labels:['Low','Medium','High'],
+        datasets:[{label:'Risk', data:[low,medium,high]}]
+    },
     options
 });
 
+// Decision
 new Chart(document.getElementById('decisionChart'), {
     type:'pie',
-    data:{ labels:['Approved','Rejected'],
-    datasets:[{data:[approved,rejected]}]},
+    data:{
+        labels:['Approved','Rejected'],
+        datasets:[{data:[approved,rejected]}]
+    },
     options
 });
 
+// Score Distribution
 new Chart(document.getElementById('scoreDistChart'), {
     type:'bar',
-    data:{ labels:Object.keys(scoreBins),
-    datasets:[{label:'Scores',data:Object.values(scoreBins)}]},
+    data:{
+        labels:Object.keys(scoreBins),
+        datasets:[{label:'Score Distribution', data:Object.values(scoreBins)}]
+    },
     options
 });
 
+// Risk vs Decision
 new Chart(document.getElementById('riskDecisionChart'), {
     type:'bar',
     data:{
         labels:['Low','Medium','High'],
         datasets:[
-            {label:'Approved',data:[
-                safeRisk.Low.Approved,
-                safeRisk.Medium.Approved,
-                safeRisk.High.Approved
-            ]},
-            {label:'Rejected',data:[
-                safeRisk.Low.Rejected,
-                safeRisk.Medium.Rejected,
-                safeRisk.High.Rejected
-            ]}
+            {
+                label:'Approved',
+                data:[
+                    safeRisk.Low.Approved,
+                    safeRisk.Medium.Approved,
+                    safeRisk.High.Approved
+                ]
+            },
+            {
+                label:'Rejected',
+                data:[
+                    safeRisk.Low.Rejected,
+                    safeRisk.Medium.Rejected,
+                    safeRisk.High.Rejected
+                ]
+            }
         ]
     },
     options
 });
 
+// Trend
 if(trend.length){
-new Chart(document.getElementById('trendChart'), {
-    type:'line',
-    data:{ labels:trend.map((_,i)=>i+1),
-    datasets:[{label:'Trend',data:trend}]},
-    options
-});
+    new Chart(document.getElementById('trendChart'), {
+        type:'line',
+        data:{
+            labels:trend.map((_,i)=>i+1),
+            datasets:[{label:'Recent Scores', data:trend}]
+        },
+        options
+    });
 }
 
+// ROC
 if(fpr.length){
-new Chart(document.getElementById('rocChart'), {
-    type:'line',
-    data:{ labels:fpr,
-    datasets:[{label:'ROC',data:tpr}]},
-    options
-});
+    new Chart(document.getElementById('rocChart'), {
+        type:'line',
+        data:{
+            labels:fpr,
+            datasets:[{label:'ROC Curve', data:tpr}]
+        },
+        options
+    });
 }
+
+// Feature Importance
+if(Object.keys(importance).length){
+    new Chart(document.getElementById('importanceChart'), {
+        type:'bar',
+        data:{
+            labels:Object.keys(importance),
+            datasets:[{
+                label:'Feature Importance',
+                data:Object.values(importance)
+            }]
+        },
+        options
+    });
+}
+
 </script>
 
 </body>

@@ -105,3 +105,20 @@ def predict_credit_score(
 
     except Exception as e:
         return {"error": str(e)}
+    
+def get_feature_importance():
+    if model is None:
+        return None
+
+    feature_names = [
+        "income", "expenses", "savings", "missed",
+        "debt_to_income", "credit_utilization",
+        "late_payments", "credit_history",
+        "new_accounts", "job_years", "residence_years"
+    ]
+
+    coefs = model.coef_[0]
+
+    importance = dict(zip(feature_names, coefs))
+
+    return importance

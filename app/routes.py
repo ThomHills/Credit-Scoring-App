@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, session
-from app.model import predict_credit_score
+from app.model import predict_credit_score, get_feature_importance
 from app.models import Application, User
 from app.db import db
 
@@ -7,7 +7,6 @@ import pickle
 import os
 
 main = Blueprint('main', __name__)
-
 
 # -----------------------
 # LOGIN
@@ -39,7 +38,7 @@ def register():
         password = request.form.get('password')
 
         if User.query.filter_by(username=username).first():
-            return render_template('register.html', error="User exists")
+            return render_template('register.html', error="User already exists")
 
         new_user = User(username=username, password=password)
         db.session.add(new_user)
@@ -82,7 +81,7 @@ def dashboard():
     high = len([a for a in apps if a.risk == "High"])
 
     # -----------------------
-    # SAFE ANALYTICS
+    # ANALYTICS
     # -----------------------
     avg_pd = round(
         sum((100 - float(a.score)) / 100 for a in apps) / total, 3
@@ -109,7 +108,7 @@ def dashboard():
         else:
             score_bins["80-100"] += 1
 
-    # ALWAYS SAFE STRUCTURE
+    # SAFE STRUCTURE
     risk_approval = {
         "Low": {"Approved": 0, "Rejected": 0},
         "Medium": {"Approved": 0, "Rejected": 0},
@@ -124,7 +123,7 @@ def dashboard():
     recent_scores = [float(a.score) for a in apps[-10:]]
 
     # -----------------------
-    # ROC SAFE LOAD
+    # ROC LOAD
     # -----------------------
     fpr, tpr, auc_score = [], [], 0
 
@@ -143,6 +142,11 @@ def dashboard():
     except Exception as e:
         print("ROC error:", e)
 
+    # -----------------------
+    # FEATURE IMPORTANCE (NEW)
+    # -----------------------
+    feature_importance = get_feature_importance() or {}
+
     return render_template(
         "dashboard.html",
         apps=apps,
@@ -160,15 +164,16 @@ def dashboard():
         recent_scores=recent_scores,
         fpr=fpr,
         tpr=tpr,
-        auc=auc_score
+        auc=auc_score,
+        feature_importance=feature_importance  # 👈 NEW
     )
 
 
 # -----------------------
-# NEW APP PAGE
+# NEW APPLICATION PAGE
 # -----------------------
 @main.route('/new')
-def new_app():
+def new_application():
     return render_template("index.html")
 
 
@@ -204,7 +209,7 @@ def score():
             expenses=float(data.get('expenses', 0)),
             savings=float(data.get('savings', 0)),
             missed=int(data.get('missed_payments', 0)),
-            score=float(result["score"]),
+            score=float(result["score"]),   # FIXED
             risk=result["risk"],
             decision="Pending"
         )
@@ -219,7 +224,7 @@ def score():
 
 
 # -----------------------
-# DECISIONS
+# APPROVE / REJECT
 # -----------------------
 @main.route('/decide/<int:id>/<action>')
 def decide(id, action):
