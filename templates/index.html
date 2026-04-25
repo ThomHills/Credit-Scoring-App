@@ -1,50 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>New Application</title>
-</head>
-
 <body style="font-family:Arial; background:#f5f7fa;">
 
-<div style="max-width:500px; margin:auto; margin-top:40px; background:white; padding:25px; border-radius:10px;">
-    
-    <h2>New Loan Application</h2>
+<div style="max-width:400px; margin:auto; margin-top:50px; background:white; padding:20px; border-radius:10px;">
+    <h2>New Credit Application</h2>
 
-    <a href="/dashboard">← Back to Dashboard</a><br><br>
+    <a href="/dashboard">Back</a><br><br>
 
     <form id="form">
 
-        <!-- BASIC -->
-        <h3>Basic Financials</h3>
-        <input id="income" placeholder="Income"><br><br>
-        <input id="expenses" placeholder="Expenses"><br><br>
-        <input id="savings" placeholder="Savings"><br><br>
-        <input id="missed" placeholder="Missed Payments"><br><br>
+        <input id="duration" placeholder="Loan Duration (months)"><br><br>
 
-        <!-- CREDIT -->
-        <h3>Credit Profile</h3>
-        <input id="total_debt" placeholder="Total Debt"><br><br>
-        <input id="credit_limit" placeholder="Credit Limit"><br><br>
-        <input id="used_credit" placeholder="Used Credit"><br><br>
-        <input id="late_payments" placeholder="Late Payments"><br><br>
+        <input id="amount" placeholder="Credit Amount"><br><br>
 
-        <!-- HISTORY -->
-        <h3>History & Activity</h3>
-        <input id="credit_history" placeholder="Credit History (years)"><br><br>
-        <input id="new_accounts" placeholder="New Accounts (last year)"><br><br>
+        <input id="installment_rate" placeholder="Installment Rate (1-4)"><br><br>
 
-        <!-- STABILITY -->
-        <h3>Stability</h3>
-        <input id="job_years" placeholder="Years in Job"><br><br>
-        <input id="residence_years" placeholder="Years at Residence"><br><br>
+        <input id="age" placeholder="Age"><br><br>
 
-        <button type="submit">Submit Application</button>
+        <input id="existing_credits" placeholder="Existing Credits"><br><br>
 
+        <button type="submit">Submit</button>
     </form>
 
-    <br>
-    <div id="msg" style="font-weight:bold;"></div>
-
+    <div id="msg"></div>
 </div>
 
 <script>
@@ -55,41 +33,27 @@ document.getElementById("form").onsubmit = async (e) => {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            income: income.value,
-            expenses: expenses.value,
-            savings: savings.value,
-            missed_payments: missed.value,
-
-            total_debt: total_debt.value,
-            credit_limit: credit_limit.value,
-            used_credit: used_credit.value,
-            late_payments: late_payments.value,
-
-            credit_history: credit_history.value,
-            new_accounts: new_accounts.value,
-
-            job_years: job_years.value,
-            residence_years: residence_years.value
+            duration: duration.value,
+            amount: amount.value,
+            installment_rate: installment_rate.value,
+            age: age.value,
+            existing_credits: existing_credits.value
         })
     });
 
     const data = await res.json();
 
     if (data.error) {
-        msg.style.color = "red";
         msg.innerText = data.error;
         return;
     }
 
-    msg.style.color = "green";
-    msg.innerText = 
-        "Score: " + data.score + 
-        " | Risk: " + data.risk + 
+    msg.innerText =
+        "Score: " + data.score +
+        " | Risk: " + data.risk +
         " | PD: " + data.prob_default;
 
-    setTimeout(() => {
-        window.location = "/dashboard";
-    }, 2000);
+    setTimeout(() => window.location = "/dashboard", 2000);
 };
 </script>
 

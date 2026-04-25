@@ -2,91 +2,79 @@ import pandas as pd
 import numpy as np
 import pickle
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, auc
 
-from sklearn.preprocessing import StandardScaler
+# -----------------------
+# LOAD DATA
+# -----------------------
+cols = [
+    "status","duration","credit_history","purpose","amount",
+    "savings","employment","installment_rate","personal_status",
+    "other_debtors","residence","property","age",
+    "other_installment","housing","existing_credits",
+    "job","people_liable","telephone","foreign_worker","target"
+]
 
-np.random.seed(42)
-n = 2000
+df = pd.read_csv("german.data", sep=" ", names=cols)
 
-# -------------------
-# DATA
-# -------------------
-data = pd.DataFrame({
-    "income": np.random.randint(1000, 6000, n),
-    "expenses": np.random.randint(500, 4000, n),
-    "savings": np.random.randint(0, 5000, n),
-    "missed": np.random.randint(0, 5, n),
+# TARGET: 1 = bad, 0 = good
+df["target"] = df["target"].apply(lambda x: 1 if x == 2 else 0)
 
-    "total_debt": np.random.randint(0, 10000, n),
-    "credit_limit": np.random.randint(1000, 15000, n),
-    "used_credit": np.random.randint(0, 10000, n),
-    "late_payments": np.random.randint(0, 5, n),
-    "credit_history": np.random.randint(1, 20, n),
-    "new_accounts": np.random.randint(0, 5, n),
-    "job_years": np.random.randint(0, 20, n),
-    "residence_years": np.random.randint(0, 20, n)
-})
-
-# -------------------
-# FEATURES
-# -------------------
-data["debt_to_income"] = data["total_debt"] / (data["income"] + 1)
-data["credit_utilization"] = data["used_credit"] / (data["credit_limit"] + 1)
-
-# -------------------
-# TARGET
-# -------------------
-data["default"] = (
-    (data["debt_to_income"] > 0.6) |
-    (data["credit_utilization"] > 0.7) |
-    (data["missed"] >= 2) |
-    (data["late_payments"] >= 2) |
-    (data["credit_history"] < 3) |
-    (data["new_accounts"] > 3)
-).astype(int)
-
-X = data[[
-    "income", "expenses", "savings", "missed",
-    "debt_to_income", "credit_utilization",
-    "late_payments", "credit_history",
-    "new_accounts", "job_years", "residence_years"
+# -----------------------
+# SIMPLE FEATURE SELECTION
+# -----------------------
+X = df[[
+    "duration",
+    "amount",
+    "installment_rate",
+    "age",
+    "existing_credits"
 ]]
 
-y = data["default"]
+y = df["target"]
 
-# -------------------
-# TRAIN
-# -------------------
+# -----------------------
+# SPLIT
+# -----------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# -----------------------
+# SCALE
+# -----------------------
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3)
-
+# -----------------------
+# MODEL
+# -----------------------
 model = LogisticRegression(max_iter=2000)
 model.fit(X_train, y_train)
 
-# -------------------
-# ROC + AUC
-# -------------------
-probs = model.predict_proba(X_test)[:, 1]
+# -----------------------
+# ROC
+# -----------------------
+y_probs = model.predict_proba(X_test)[:, 1]
 
-fpr, tpr, _ = roc_curve(y_test, probs)
+fpr, tpr, _ = roc_curve(y_test, y_probs)
 roc_auc = auc(fpr, tpr)
 
 print("AUC:", roc_auc)
 
-# -------------------
-# SAVE MODEL
-# -------------------
+# -----------------------
+# SAVE
+# -----------------------
 with open("model.pkl", "wb") as f:
     pickle.dump(model, f)
 
-# -------------------
-# SAVE ROC DATA
-# -------------------
+with open("scaler.pkl", "wb") as f:
+    pickle.dump(scaler, f)
+
 with open("roc_data.pkl", "wb") as f:
     pickle.dump({
         "fpr": fpr.tolist(),
@@ -94,6 +82,4 @@ with open("roc_data.pkl", "wb") as f:
         "auc": roc_auc
     }, f)
 
-with open("scaler.pkl", "wb") as f:
-    pickle.dump(scaler, f)
-print("Model and ROC saved!")
+print("Model + ROC saved!")
