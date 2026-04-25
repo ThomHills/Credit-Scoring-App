@@ -12,18 +12,4 @@ from app.db import db
 
 def create_app():
     app = Flask(__name__)
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'your_database_url'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.secret_key = "secret"
-
-    db.init_app(app)
-
-    # 👇 CREATE TABLES HERE
-    with app.app_context():
-        db.create_all()
-
-    from app.routes import main
-    app.register_blueprint(main)
-
     return app
