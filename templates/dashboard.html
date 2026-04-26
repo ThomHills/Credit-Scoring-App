@@ -2,60 +2,182 @@
 <html>
 <head>
     <title>Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .nav {
+            margin-bottom: 15px;
+        }
+
+        .nav a {
+            margin-right: 10px;
+        }
+
+        .tabs button {
+            padding: 10px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .active {
+            display: block;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: 300px;
+        }
+    </style>
 </head>
 
-<body style="font-family:Arial; background:#f5f7fa;">
+<body>
 
-<div style="margin-bottom:15px;">
-    <a href="/dashboard">Dashboard</a> |
-    <a href="/new">New Application</a> |
-    <a href="/">Login</a> |
-    <a href="/logout">Logout</a>
+<div class="container">
+
+    <!-- NAV -->
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/new">New Application</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <h2>Credit Dashboard</h2>
+
+    <!-- SUMMARY -->
+    <p>Total Applications: {{ total }}</p>
+    <p>Average Score: {{ avg_score }}</p>
+    <p>Approval Rate: {{ approval_rate }}%</p>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button onclick="showTab('charts')">Charts</button>
+        <button onclick="showTab('table')">Applications</button>
+    </div>
+
+    <!-- CHARTS TAB -->
+    <div id="charts" class="tab-content active">
+
+        <h3>Score Distribution</h3>
+        <canvas id="scoreChart"></canvas>
+
+        <h3>Risk Distribution</h3>
+        <canvas id="riskChart"></canvas>
+
+        <h3>Recent Scores</h3>
+        <canvas id="trendChart"></canvas>
+
+    </div>
+
+    <!-- TABLE TAB -->
+    <div id="table" class="tab-content">
+
+        <h3>Applications</h3>
+
+        <table border="1" cellpadding="8" style="width:100%; text-align:center;">
+            <tr style="background:#eee;">
+                <th>ID</th>
+                <th>Duration</th>
+                <th>Amount</th>
+                <th>Installment</th>
+                <th>Age</th>
+                <th>Credits</th>
+                <th>Score</th>
+                <th>Risk</th>
+                <th>Decision</th>
+                <th>Action</th>
+            </tr>
+
+            {% for a in apps %}
+            <tr>
+                <td>{{ a.id }}</td>
+                <td>{{ a.duration }}</td>
+                <td>{{ a.amount }}</td>
+                <td>{{ a.installment_rate }}</td>
+                <td>{{ a.age }}</td>
+                <td>{{ a.existing_credits }}</td>
+                <td>{{ a.score }}</td>
+                <td>{{ a.risk }}</td>
+                <td>{{ a.decision }}</td>
+                <td>
+                    <a href="/decide/{{ a.id }}/approve">Approve</a> |
+                    <a href="/decide/{{ a.id }}/reject">Reject</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+
 </div>
 
-<div style="max-width:1000px; margin:auto; margin-top:40px; background:white; padding:20px; border-radius:10px;">
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+}
 
-    <h2>Dashboard</h2>
+// DATA FROM FLASK
+const scoreBins = {{ score_bins | tojson | safe }};
+const recentScores = {{ recent_scores | tojson | safe }};
+const low = {{ low }};
+const medium = {{ medium }};
+const high = {{ high }};
 
-    <a href="/new">+ New Application</a>
+// SCORE CHART
+new Chart(document.getElementById('scoreChart'), {
+    type: 'bar',
+    data: {
+        labels: Object.keys(scoreBins),
+        datasets: [{
+            label: 'Scores',
+            data: Object.values(scoreBins)
+        }]
+    }
+});
 
-    <br><br>
+// RISK CHART
+new Chart(document.getElementById('riskChart'), {
+    type: 'pie',
+    data: {
+        labels: ['Low', 'Medium', 'High'],
+        datasets: [{
+            data: [low, medium, high]
+        }]
+    }
+});
 
-    <table border="1" cellpadding="8" style="border-collapse:collapse; width:100%; text-align:center;">
-        <tr style="background:#eee;">
-            <th>ID</th>
-            <th>Duration</th>
-            <th>Amount</th>
-            <th>Installment</th>
-            <th>Age</th>
-            <th>Credits</th>
-            <th>Score</th>
-            <th>Risk</th>
-            <th>Decision</th>
-            <th>Action</th>
-        </tr>
-
-        {% for a in apps %}
-        <tr>
-            <td>{{ a.id }}</td>
-            <td>{{ a.duration }}</td>
-            <td>{{ a.amount }}</td>
-            <td>{{ a.installment_rate }}</td>
-            <td>{{ a.age }}</td>
-            <td>{{ a.existing_credits }}</td>
-            <td>{{ a.score }}</td>
-            <td>{{ a.risk }}</td>
-            <td>{{ a.decision }}</td>
-            <td>
-                <a href="/decide/{{ a.id }}/approve">Approve</a> |
-                <a href="/decide/{{ a.id }}/reject">Reject</a>
-            </td>
-        </tr>
-        {% endfor %}
-
-    </table>
-
-</div>
+// TREND CHART
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: recentScores.map((_, i) => i + 1),
+        datasets: [{
+            label: 'Recent Scores',
+            data: recentScores
+        }]
+    }
+});
+</script>
 
 </body>
 </html>
