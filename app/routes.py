@@ -40,6 +40,23 @@ def register():
 
     return render_template('register.html')
 
+@main.route('/', methods=['GET', 'POST'])
+def home():
+    from app.models import User
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.password == password:
+            return redirect('/dashboard')
+
+        return render_template("login.html", error="Invalid credentials")
+
+    return render_template("login.html")
+
 # -----------------------
 # NEW APPLICATION PAGE
 # -----------------------
