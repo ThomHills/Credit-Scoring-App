@@ -1,34 +1,39 @@
-from flask import Blueprint, render_template, request, jsonify, redirect
-from app.models import Application
+from flask import Blueprint, render_template, request, jsonify, redirect, session
+from app.models import Application, User
 from app.db import db
 from app.model import predict_credit_score
 
-
 main = Blueprint('main', __name__)
 
-
-@main.route('/')
-def home():
-    return render_template("login.html")
-
 # -----------------------
-# DASHBOARD
+# LOGIN (HOME)
 # -----------------------
-@main.route('/dashboard')
-def dashboard():
-    apps = Application.query.order_by(Application.id.desc()).all()
-
-    return render_template("dashboard.html", apps=apps)
-
-@main.route('/register', methods=['GET', 'POST'])
-def register():
-    from app.models import User
-
+@main.route('/', methods=['GET', 'POST'])
+def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # check if user exists
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.password == password:
+            session['user_id'] = user.id
+            return redirect('/dashboard')
+
+        return render_template('login.html', error="Invalid credentials")
+
+    return render_template('login.html')
+
+
+# -----------------------
+# REGISTER
+# -----------------------
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
         if User.query.filter_by(username=username).first():
             return render_template('register.html', error="User already exists")
 
@@ -40,28 +45,37 @@ def register():
 
     return render_template('register.html')
 
-@main.route('/', methods=['GET', 'POST'])
-def home():
-    from app.models import User
 
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+# -----------------------
+# LOGOUT
+# -----------------------
+@main.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
 
-        user = User.query.filter_by(username=username).first()
 
-        if user and user.password == password:
-            return redirect('/dashboard')
+# -----------------------
+# DASHBOARD
+# -----------------------
+@main.route('/dashboard')
+def dashboard():
+    # Optional protection
+    if 'user_id' not in session:
+        return redirect('/')
 
-        return render_template("login.html", error="Invalid credentials")
+    apps = Application.query.order_by(Application.id.desc()).all()
+    return render_template("dashboard.html", apps=apps)
 
-    return render_template("login.html")
 
 # -----------------------
 # NEW APPLICATION PAGE
 # -----------------------
 @main.route('/new')
 def new_application():
+    if 'user_id' not in session:
+        return redirect('/')
+
     return render_template("index.html")
 
 
@@ -73,15 +87,11 @@ def score():
     try:
         data = request.get_json()
 
-        print("JSON:", data)
-
         duration = float(data.get('duration', 0))
         amount = float(data.get('amount', 0))
         installment_rate = float(data.get('installment_rate', 0))
         age = float(data.get('age', 0))
         existing_credits = float(data.get('existing_credits', 0))
-
-        print("PARSED:", duration, amount, installment_rate, age, existing_credits)
 
         result = predict_credit_score(
             duration,
@@ -105,15 +115,6 @@ def score():
         db.session.add(new_app)
         db.session.commit()
 
-        # 🔥 VERIFY SAVE (CRITICAL)
-        saved = Application.query.order_by(Application.id.desc()).first()
-        print("SAVED FROM DB:",
-              saved.duration,
-              saved.amount,
-              saved.installment_rate,
-              saved.age,
-              saved.existing_credits)
-
         return jsonify(result)
 
     except Exception as e:
@@ -126,6 +127,9 @@ def score():
 # -----------------------
 @main.route('/decide/<int:id>/<action>')
 def decide(id, action):
+    if 'user_id' not in session:
+        return redirect('/')
+
     app = Application.query.get(id)
 
     if app:
