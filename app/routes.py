@@ -80,9 +80,7 @@ def dashboard():
     medium = len([a for a in apps if a.risk == "Medium"])
     high = len([a for a in apps if a.risk == "High"])
 
-    # -----------------------
-    # SCORE DISTRIBUTION
-    # -----------------------
+    # Score distribution
     score_bins = {"0-20":0,"20-40":0,"40-60":0,"60-80":0,"80-100":0}
 
     for a in apps:
@@ -98,9 +96,7 @@ def dashboard():
         else:
             score_bins["80-100"] += 1
 
-    # -----------------------
-    # RISK VS DECISION
-    # -----------------------
+    # Risk vs decision
     risk_approval = {
         "Low": {"Approved": 0, "Rejected": 0},
         "Medium": {"Approved": 0, "Rejected": 0},
@@ -113,11 +109,8 @@ def dashboard():
 
     recent_scores = [float(a.score) for a in apps[-10:]]
 
-    # -----------------------
-    # ROC DATA
-    # -----------------------
+    # ROC data
     fpr, tpr, auc_score = [], [], 0
-
     try:
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         roc_path = os.path.join(base_dir, "roc_data.pkl")
@@ -131,11 +124,8 @@ def dashboard():
             auc_score = round(float(roc.get("auc", 0)), 3)
 
     except Exception as e:
-        print("ROC error:", e)
+        print("ROC ERROR:", e)
 
-    # -----------------------
-    # FEATURE IMPORTANCE
-    # -----------------------
     feature_importance = get_feature_importance() or {}
 
     return render_template(
@@ -168,18 +158,29 @@ def new_application():
 
 
 # -----------------------
-# SCORE (CORE ML PIPELINE)
+# SCORE (CORE PIPELINE + DEBUG)
 # -----------------------
 @main.route('/score', methods=['POST'])
 def score():
     try:
-        data = request.get_json() or {}
+        print(">>> HIT /score ROUTE <<<")
+
+        data = request.get_json()
+        print("JSON RECEIVED:", data)
+
+        if not data:
+            return jsonify({"error": "No JSON received"})
 
         duration = float(data.get('duration', 0))
         amount = float(data.get('amount', 0))
         installment_rate = float(data.get('installment_rate', 0))
         age = float(data.get('age', 0))
         existing_credits = float(data.get('existing_credits', 0))
+
+        print("PARSED:",
+              duration, amount, installment_rate, age, existing_credits)
+
+        print("DB COLUMNS:", Application.__table__.columns.keys())
 
         result = predict_credit_score(
             duration,
@@ -188,6 +189,8 @@ def score():
             age,
             existing_credits
         )
+
+        print("MODEL RESULT:", result)
 
         if "error" in result:
             return jsonify(result)
@@ -203,12 +206,18 @@ def score():
             decision="Pending"
         )
 
+        print("OBJECT BEFORE SAVE:",
+              new_app.duration, new_app.amount, new_app.age)
+
         db.session.add(new_app)
         db.session.commit()
+
+        print(">>> SAVED SUCCESSFULLY <<<")
 
         return jsonify(result)
 
     except Exception as e:
+        print("ERROR:", str(e))
         return jsonify({"error": str(e)})
 
 
