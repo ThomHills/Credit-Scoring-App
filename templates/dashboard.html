@@ -2,244 +2,53 @@
 <html>
 <head>
     <title>Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body style="font-family:Arial; background:#f5f7fa; margin:0;">
+<body style="font-family:Arial; background:#f5f7fa;">
 
-<div style="max-width:1200px; margin:auto; padding:20px;">
+<div style="max-width:1000px; margin:auto; margin-top:40px; background:white; padding:20px; border-radius:10px;">
 
-    <!-- HEADER -->
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Credit Risk Dashboard</h2>
+    <h2>Dashboard</h2>
 
-        <div>
-            <a href="/new" style="margin-right:10px;">+ New Application</a>
-            <a href="/logout">Logout</a>
-        </div>
-    </div>
+    <a href="/new">+ New Application</a>
 
-    <hr>
+    <br><br>
 
-    <!-- TABS -->
-    <div style="margin-bottom:20px;">
-        <button onclick="showTab('overview')">Overview</button>
-        <button onclick="showTab('risk')">Risk</button>
-        <button onclick="showTab('model')">Model</button>
-        <button onclick="showTab('data')">Applications</button>
-    </div>
+    <table border="1" cellpadding="8" style="border-collapse:collapse; width:100%; text-align:center;">
+        <tr style="background:#eee;">
+            <th>ID</th>
+            <th>Duration</th>
+            <th>Amount</th>
+            <th>Installment</th>
+            <th>Age</th>
+            <th>Credits</th>
+            <th>Score</th>
+            <th>Risk</th>
+            <th>Decision</th>
+            <th>Action</th>
+        </tr>
 
-    <!-- ===================== -->
-    <!-- OVERVIEW -->
-    <!-- ===================== -->
-    <div id="overview" class="tab">
+        {% for a in apps %}
+        <tr>
+            <td>{{ a.id }}</td>
+            <td>{{ a.duration }}</td>
+            <td>{{ a.amount }}</td>
+            <td>{{ a.installment_rate }}</td>
+            <td>{{ a.age }}</td>
+            <td>{{ a.existing_credits }}</td>
+            <td>{{ a.score }}</td>
+            <td>{{ a.risk }}</td>
+            <td>{{ a.decision }}</td>
+            <td>
+                <a href="/decide/{{ a.id }}/approve">Approve</a> |
+                <a href="/decide/{{ a.id }}/reject">Reject</a>
+            </td>
+        </tr>
+        {% endfor %}
 
-        <div style="display:flex; gap:15px; flex-wrap:wrap;">
-            <div style="background:white; padding:10px;">Total: {{ total }}</div>
-            <div style="background:white; padding:10px;">Avg Score: {{ avg_score }}</div>
-            <div style="background:white; padding:10px;">Approval Rate: {{ approval_rate }}%</div>
-        </div>
-
-        <br>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div style="background:white; padding:10px; height:300px;">
-                <canvas id="trendChart"></canvas>
-            </div>
-
-            <div style="background:white; padding:10px; height:300px;">
-                <canvas id="scoreDistChart"></canvas>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- RISK -->
-    <!-- ===================== -->
-    <div id="risk" class="tab" style="display:none">
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div style="background:white; padding:10px; height:300px;">
-                <canvas id="riskChart"></canvas>
-            </div>
-
-            <div style="background:white; padding:10px; height:300px;">
-                <canvas id="decisionChart"></canvas>
-            </div>
-
-            <div style="background:white; padding:10px; height:300px;">
-                <canvas id="riskDecisionChart"></canvas>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- MODEL -->
-    <!-- ===================== -->
-    <div id="model" class="tab" style="display:none">
-
-        <h3>Model Performance (AUC: {{ auc }})</h3>
-
-        <div style="background:white; padding:10px; height:300px;">
-            <canvas id="rocChart"></canvas>
-        </div>
-
-        <h3>Feature Importance</h3>
-
-        <div style="background:white; padding:10px; height:350px;">
-            <canvas id="importanceChart"></canvas>
-        </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- DATA TABLE -->
-    <!-- ===================== -->
-    <div id="data" class="tab" style="display:none">
-
-        <h3>Applications (German Credit Features)</h3>
-
-        <div style="overflow-x:auto;">
-            <table border="1" cellpadding="6" style="width:100%; background:white; font-size:14px;">
-                <tr>
-                    <th>ID</th>
-                    <th>Duration</th>
-                    <th>Amount</th>
-                    <th>Installment Rate</th>
-                    <th>Age</th>
-                    <th>Existing Credits</th>
-                    <th>Score</th>
-                    <th>Risk</th>
-                    <th>Decision</th>
-                    <th>Action</th>
-                </tr>
-
-                {% for a in apps %}
-                <tr>
-                    <td>{{ a.id }}</td>
-                    <td>{{ a.expenses }}</td>        <!-- duration -->
-                    <td>{{ a.income }}</td>          <!-- amount -->
-                    <td>-</td>                       <!-- not stored yet -->
-                    <td>{{ a.savings }}</td>         <!-- age -->
-                    <td>{{ a.missed }}</td>          <!-- credits -->
-                    <td>{{ a.score }}</td>
-                    <td>{{ a.risk }}</td>
-                    <td>{{ a.decision }}</td>
-                    <td>
-                        <a href="/decide/{{ a.id }}/approve">Approve</a> |
-                        <a href="/decide/{{ a.id }}/reject">Reject</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-        </div>
-
-    </div>
+    </table>
 
 </div>
-
-<script>
-
-// TAB SWITCH
-function showTab(id){
-    document.querySelectorAll(".tab").forEach(t => t.style.display="none");
-    document.getElementById(id).style.display="block";
-}
-
-// DATA
-const low = {{ low | default(0) }};
-const medium = {{ medium | default(0) }};
-const high = {{ high | default(0) }};
-const approved = {{ approved | default(0) }};
-const rejected = {{ rejected | default(0) }};
-
-const scoreBins = {{ score_bins | tojson }};
-const riskData = {{ risk_approval | tojson }};
-const trend = {{ (recent_scores or []) | tojson }};
-const fpr = {{ (fpr or []) | tojson }};
-const tpr = {{ (tpr or []) | tojson }};
-const importance = {{ (feature_importance or {}) | tojson }};
-
-const safeRisk = {
-    Low: riskData.Low || {Approved:0,Rejected:0},
-    Medium: riskData.Medium || {Approved:0,Rejected:0},
-    High: riskData.High || {Approved:0,Rejected:0}
-};
-
-const options = { responsive:true, maintainAspectRatio:false };
-
-// CHARTS
-new Chart(document.getElementById('riskChart'), {
-    type:'bar',
-    data:{ labels:['Low','Medium','High'],
-    datasets:[{label:'Risk', data:[low,medium,high]}]},
-    options
-});
-
-new Chart(document.getElementById('decisionChart'), {
-    type:'pie',
-    data:{ labels:['Approved','Rejected'],
-    datasets:[{data:[approved,rejected]}]},
-    options
-});
-
-new Chart(document.getElementById('scoreDistChart'), {
-    type:'bar',
-    data:{ labels:Object.keys(scoreBins),
-    datasets:[{label:'Scores', data:Object.values(scoreBins)}]},
-    options
-});
-
-new Chart(document.getElementById('riskDecisionChart'), {
-    type:'bar',
-    data:{
-        labels:['Low','Medium','High'],
-        datasets:[
-            {label:'Approved',data:[
-                safeRisk.Low.Approved,
-                safeRisk.Medium.Approved,
-                safeRisk.High.Approved]},
-            {label:'Rejected',data:[
-                safeRisk.Low.Rejected,
-                safeRisk.Medium.Rejected,
-                safeRisk.High.Rejected]}
-        ]
-    },
-    options
-});
-
-if(trend.length){
-new Chart(document.getElementById('trendChart'), {
-    type:'line',
-    data:{ labels:trend.map((_,i)=>i+1),
-    datasets:[{label:'Trend',data:trend}]},
-    options
-});
-}
-
-if(fpr.length){
-new Chart(document.getElementById('rocChart'), {
-    type:'line',
-    data:{ labels:fpr,
-    datasets:[{label:'ROC',data:tpr}]},
-    options
-});
-}
-
-if(Object.keys(importance).length){
-new Chart(document.getElementById('importanceChart'), {
-    type:'bar',
-    data:{
-        labels:Object.keys(importance),
-        datasets:[{label:'Importance', data:Object.values(importance)}]
-    },
-    options
-});
-}
-
-</script>
 
 </body>
 </html>
