@@ -3,11 +3,12 @@ from app.models import Application
 from app.db import db
 from app.model import predict_credit_score
 
+
+main = Blueprint('main', __name__)
+
 @main.route('/')
 def home():
     return redirect('/dashboard')
-
-main = Blueprint('main', __name__)
 
 # -----------------------
 # DASHBOARD
