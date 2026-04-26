@@ -6,9 +6,10 @@ from app.model import predict_credit_score
 
 main = Blueprint('main', __name__)
 
+
 @main.route('/')
 def home():
-    return redirect('/dashboard')
+    return render_template("login.html")
 
 # -----------------------
 # DASHBOARD
