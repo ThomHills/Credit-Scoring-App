@@ -60,23 +60,58 @@ def logout():
 # -----------------------
 @main.route('/dashboard')
 def dashboard():
-    # Optional protection
     if 'user_id' not in session:
         return redirect('/')
 
     apps = Application.query.order_by(Application.id.desc()).all()
-    return render_template("dashboard.html", apps=apps)
 
+    total = len(apps)
 
-# -----------------------
-# NEW APPLICATION PAGE
-# -----------------------
-@main.route('/new')
-def new_application():
-    if 'user_id' not in session:
-        return redirect('/')
+    avg_score = round(
+        sum(float(a.score) for a in apps) / total, 2
+    ) if total else 0
 
-    return render_template("index.html")
+    approved = len([a for a in apps if a.decision == "Approved"])
+    rejected = len([a for a in apps if a.decision == "Rejected"])
+
+    approval_rate = round((approved / total) * 100, 2) if total else 0
+
+    # Risk distribution
+    low = len([a for a in apps if a.risk == "Low"])
+    medium = len([a for a in apps if a.risk == "Medium"])
+    high = len([a for a in apps if a.risk == "High"])
+
+    # Score bins
+    score_bins = {"0-20":0,"20-40":0,"40-60":0,"60-80":0,"80-100":0}
+
+    for a in apps:
+        s = float(a.score)
+        if s <= 20:
+            score_bins["0-20"] += 1
+        elif s <= 40:
+            score_bins["20-40"] += 1
+        elif s <= 60:
+            score_bins["40-60"] += 1
+        elif s <= 80:
+            score_bins["60-80"] += 1
+        else:
+            score_bins["80-100"] += 1
+
+    # Recent scores
+    recent_scores = [float(a.score) for a in apps[-10:]]
+
+    return render_template(
+        "dashboard.html",
+        apps=apps,
+        total=total,
+        avg_score=avg_score,
+        approval_rate=approval_rate,
+        low=low,
+        medium=medium,
+        high=high,
+        score_bins=score_bins,
+        recent_scores=recent_scores
+    )
 
 
 # -----------------------
