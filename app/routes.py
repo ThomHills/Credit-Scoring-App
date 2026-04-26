@@ -20,6 +20,25 @@ def dashboard():
 
     return render_template("dashboard.html", apps=apps)
 
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    from app.models import User
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # check if user exists
+        if User.query.filter_by(username=username).first():
+            return render_template('register.html', error="User already exists")
+
+        new_user = User(username=username, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect('/')
+
+    return render_template('register.html')
 
 # -----------------------
 # NEW APPLICATION PAGE
