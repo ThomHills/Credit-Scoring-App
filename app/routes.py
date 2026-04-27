@@ -56,7 +56,7 @@ def logout():
 
 
 # -----------------------
-# DASHBOARD
+# DASHBOARD (SAFE)
 # -----------------------
 @main.route('/dashboard')
 def dashboard():
@@ -67,9 +67,10 @@ def dashboard():
 
     total = len(apps)
 
-    avg_score = round(
-        sum(float(a.score) for a in apps) / total, 2
-    ) if total else 0
+    # ✅ SAFE SCORES (prevents crashes)
+    scores = [float(a.score or 0) for a in apps]
+
+    avg_score = round(sum(scores) / total, 2) if total else 0
 
     approved = len([a for a in apps if a.decision == "Approved"])
     rejected = len([a for a in apps if a.decision == "Rejected"])
@@ -84,8 +85,7 @@ def dashboard():
     # Score bins
     score_bins = {"0-20":0,"20-40":0,"40-60":0,"60-80":0,"80-100":0}
 
-    for a in apps:
-        s = float(a.score)
+    for s in scores:
         if s <= 20:
             score_bins["0-20"] += 1
         elif s <= 40:
@@ -97,8 +97,7 @@ def dashboard():
         else:
             score_bins["80-100"] += 1
 
-    # Recent scores
-    recent_scores = [float(a.score) for a in apps[-10:]]
+    recent_scores = scores[-10:]
 
     return render_template(
         "dashboard.html",
@@ -112,6 +111,17 @@ def dashboard():
         score_bins=score_bins,
         recent_scores=recent_scores
     )
+
+
+# -----------------------
+# ✅ NEW APPLICATION PAGE (THIS WAS MISSING)
+# -----------------------
+@main.route('/new')
+def new_application():
+    if 'user_id' not in session:
+        return redirect('/')
+
+    return render_template("index.html")
 
 
 # -----------------------
@@ -142,8 +152,8 @@ def score():
             installment_rate=installment_rate,
             age=age,
             existing_credits=existing_credits,
-            score=float(result["score"]),
-            risk=result["risk"],
+            score=float(result.get("score", 0)),
+            risk=result.get("risk", "Unknown"),
             decision="Pending"
         )
 
