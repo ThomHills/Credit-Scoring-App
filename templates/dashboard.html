@@ -43,9 +43,16 @@
             display: block;
         }
 
+        /* ✅ FIXED CHART LAYOUT */
+        .chart-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+
         canvas {
-            max-width: 100%;
-            height: 300px;
+            width: 100% !important;
+            height: 300px !important;
         }
     </style>
 </head>
@@ -78,13 +85,19 @@
     <div id="charts" class="tab-content active">
 
         <h3>Score Distribution</h3>
-        <canvas id="scoreChart"></canvas>
+        <div class="chart-container">
+            <canvas id="scoreChart"></canvas>
+        </div>
 
         <h3>Risk Distribution</h3>
-        <canvas id="riskChart"></canvas>
+        <div class="chart-container">
+            <canvas id="riskChart"></canvas>
+        </div>
 
         <h3>Recent Scores</h3>
-        <canvas id="trendChart"></canvas>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
 
     </div>
 
@@ -136,58 +149,50 @@ function showTab(tab) {
     document.getElementById(tab).classList.add('active');
 }
 
-// DATA FROM FLASK
-const scoreBins = {{ score_bins | tojson | safe }};
-const recentScores = {{ recent_scores | tojson | safe }};
-const low = {{ low }};
-const medium = {{ medium }};
-const high = {{ high }};
+document.addEventListener("DOMContentLoaded", function () {
 
-// SCORE CHART
-new Chart(document.getElementById('scoreChart'), {
-    type: 'bar',
-    data: {
-        labels: Object.keys(scoreBins),
-        datasets: [{
-            label: 'Scores',
-            data: Object.values(scoreBins)
-        }]
-    }
+    const scoreBins = {{ score_bins | tojson | safe }};
+    const recentScores = {{ recent_scores | tojson | safe }};
+    const low = {{ low }};
+    const medium = {{ medium }};
+    const high = {{ high }};
+
+    // SCORE CHART
+    new Chart(document.getElementById('scoreChart'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(scoreBins),
+            datasets: [{
+                label: 'Scores',
+                data: Object.values(scoreBins)
+            }]
+        }
+    });
+
+    // RISK CHART
+    new Chart(document.getElementById('riskChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Low', 'Medium', 'High'],
+            datasets: [{
+                data: [low, medium, high]
+            }]
+        }
+    });
+
+    // TREND CHART
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: recentScores.map((_, i) => i + 1),
+            datasets: [{
+                label: 'Recent Scores',
+                data: recentScores
+            }]
+        }
+    });
+
 });
-
-// RISK CHART
-new Chart(document.getElementById('riskChart'), {
-    type: 'pie',
-    data: {
-        labels: ['Low', 'Medium', 'High'],
-        datasets: [{
-            data: [low, medium, high]
-        }]
-    }
-});
-
-// TREND CHART
-new Chart(document.getElementById('trendChart'), {
-    type: 'line',
-    data: {
-        labels: recentScores.map((_, i) => i + 1),
-        datasets: [{
-            label: 'Recent Scores',
-            data: recentScores
-        }]
-    }
-});
-
-.chart-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 20px auto;
-}
-
-canvas {
-    width: 100% !important;
-    height: 300px !important;
-}
 </script>
 
 </body>
