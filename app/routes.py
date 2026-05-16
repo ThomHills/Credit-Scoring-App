@@ -63,7 +63,9 @@ def dashboard():
     if 'user_id' not in session:
         return redirect('/')
 
-    apps = Application.query.order_by(Application.id.desc()).all()
+    apps = Application.query.filter_by(
+        user_id=session['user_id']
+    ).order_by(Application.id.desc()).all()
 
     total = len(apps)
 
@@ -160,6 +162,7 @@ def score():
             installment_rate=installment_rate,
             age=age,
             existing_credits=existing_credits,
+            user_id=session['user_id'],
 
             score=float(result.get("score", 0)),
             risk=result.get("risk", "Unknown"),
