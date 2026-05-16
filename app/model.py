@@ -21,9 +21,14 @@ except:
 # -----------------------
 # PREDICTION
 # -----------------------
-model = joblib.load('credit_model.pkl')
-scaler = joblib.load('scaler.pkl')
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+model_path = os.path.join(BASE_DIR, 'credit_model.pkl')
+scaler_path = os.path.join(BASE_DIR, 'scaler.pkl')
+
+model = joblib.load(model_path)
+scaler = joblib.load(scaler_path)
 
 def predict_credit_score(duration, amount, installment_rate, age, existing_credits):
 
