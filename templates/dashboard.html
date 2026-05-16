@@ -1,59 +1,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard</title>
+    <title>Credit Risk Dashboard</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             background: #f5f7fa;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
-            max-width: 1100px;
-            margin: auto;
-            margin-top: 30px;
+            max-width: 1200px;
+            margin: 30px auto;
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
         }
 
+        h1, h2, h3 {
+            color: #333;
+        }
+
         .nav {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .nav a {
-            margin-right: 10px;
+            text-decoration: none;
+            margin-right: 15px;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            background: #f8f9fc;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #007bff;
+        }
+
+        .summary-card h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .summary-card p {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .tabs {
+            margin-bottom: 20px;
         }
 
         .tabs button {
-            padding: 10px;
-            margin-right: 5px;
+            padding: 10px 18px;
+            margin-right: 8px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
             cursor: pointer;
+        }
+
+        .tabs button:hover {
+            opacity: 0.9;
         }
 
         .tab-content {
             display: none;
-            margin-top: 20px;
         }
 
         .active {
             display: block;
         }
 
-        /* ✅ FIXED CHART LAYOUT */
+        .chart-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
         .chart-container {
             width: 100%;
             max-width: 500px;
-            margin: 20px auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
         }
 
         canvas {
             width: 100% !important;
             height: 300px !important;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+        }
+
+        table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .approve {
+            color: green;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .reject {
+            color: red;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .decision-approved {
+            color: green;
+            font-weight: bold;
+        }
+
+        .decision-rejected {
+            color: red;
+            font-weight: bold;
+        }
+
+        .decision-pending {
+            color: orange;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 
@@ -61,53 +159,78 @@
 
 <div class="container">
 
-    <!-- NAV -->
+    <!-- NAVIGATION -->
     <div class="nav">
         <a href="/dashboard">Dashboard</a>
         <a href="/new">New Application</a>
         <a href="/logout">Logout</a>
     </div>
 
-    <h2>Credit Dashboard</h2>
+    <h1>Credit Risk Dashboard</h1>
 
     <!-- SUMMARY -->
-    <p>Total Applications: {{ total }}</p>
-    <p>Average Score: {{ avg_score }}</p>
-    <p>Approval Rate: {{ approval_rate }}%</p>
+    <div class="summary-grid">
+
+        <div class="summary-card">
+            <h3>Total Applications</h3>
+            <p>{{ total }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Average Score</h3>
+            <p>{{ avg_score }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Approval Rate</h3>
+            <p>{{ approval_rate }}%</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Portfolio Expected Loss</h3>
+            <p>{{ portfolio_el }}</p>
+        </div>
+
+    </div>
 
     <!-- TABS -->
     <div class="tabs">
         <button onclick="showTab('charts')">Charts</button>
-        <button onclick="showTab('table')">Applications</button>
+        <button onclick="showTab('applications')">Applications</button>
     </div>
 
     <!-- CHARTS TAB -->
     <div id="charts" class="tab-content active">
 
-        <h3>Score Distribution</h3>
-        <div class="chart-container">
-            <canvas id="scoreChart"></canvas>
-        </div>
+        <div class="chart-grid">
 
-        <h3>Risk Distribution</h3>
-        <div class="chart-container">
-            <canvas id="riskChart"></canvas>
-        </div>
+            <div class="chart-container">
+                <h3>Score Distribution</h3>
+                <canvas id="scoreChart"></canvas>
+            </div>
 
-        <h3>Recent Scores</h3>
-        <div class="chart-container">
-            <canvas id="trendChart"></canvas>
+            <div class="chart-container">
+                <h3>Risk Distribution</h3>
+                <canvas id="riskChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3>Recent Scores Trend</h3>
+                <canvas id="trendChart"></canvas>
+            </div>
+
         </div>
 
     </div>
 
-    <!-- TABLE TAB -->
-    <div id="table" class="tab-content">
+    <!-- APPLICATIONS TAB -->
+    <div id="applications" class="tab-content">
 
-        <h3>Applications</h3>
+        <h2>Applications</h2>
 
-        <table border="1" cellpadding="8" style="width:100%; text-align:center;">
-            <tr style="background:#eee;">
+        <table>
+
+            <tr>
                 <th>ID</th>
                 <th>Duration</th>
                 <th>Amount</th>
@@ -115,6 +238,8 @@
                 <th>Age</th>
                 <th>Credits</th>
                 <th>Score</th>
+                <th>PD</th>
+                <th>EL</th>
                 <th>Risk</th>
                 <th>Decision</th>
                 <th>Action</th>
@@ -122,21 +247,53 @@
 
             {% for a in apps %}
             <tr>
+
                 <td>{{ a.id }}</td>
                 <td>{{ a.duration }}</td>
                 <td>{{ a.amount }}</td>
                 <td>{{ a.installment_rate }}</td>
                 <td>{{ a.age }}</td>
                 <td>{{ a.existing_credits }}</td>
+
                 <td>{{ a.score }}</td>
-                <td>{{ a.risk }}</td>
-                <td>{{ a.decision }}</td>
+
                 <td>
-                    <a href="/decide/{{ a.id }}/approve">Approve</a> |
-                    <a href="/decide/{{ a.id }}/reject">Reject</a>
+                    {% if a.pd %}
+                        {{ "%.4f"|format(a.pd) }}
+                    {% else %}
+                        0
+                    {% endif %}
                 </td>
+
+                <td>
+                    {% if a.expected_loss %}
+                        {{ a.expected_loss }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </td>
+
+                <td>{{ a.risk }}</td>
+
+                <td>
+                    {% if a.decision == "Approved" %}
+                        <span class="decision-approved">Approved</span>
+                    {% elif a.decision == "Rejected" %}
+                        <span class="decision-rejected">Rejected</span>
+                    {% else %}
+                        <span class="decision-pending">Pending</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <a class="approve" href="/decide/{{ a.id }}/approve">Approve</a>
+                    |
+                    <a class="reject" href="/decide/{{ a.id }}/reject">Reject</a>
+                </td>
+
             </tr>
             {% endfor %}
+
         </table>
 
     </div>
@@ -144,9 +301,14 @@
 </div>
 
 <script>
-function showTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.getElementById(tab).classList.add('active');
+
+function showTab(tabId) {
+
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    document.getElementById(tabId).classList.add('active');
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -157,19 +319,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const medium = {{ medium }};
     const high = {{ high }};
 
-    // SCORE CHART
+    // SCORE DISTRIBUTION
     new Chart(document.getElementById('scoreChart'), {
         type: 'bar',
         data: {
             labels: Object.keys(scoreBins),
             datasets: [{
-                label: 'Scores',
+                label: 'Applications',
                 data: Object.values(scoreBins)
             }]
         }
     });
 
-    // RISK CHART
+    // RISK DISTRIBUTION
     new Chart(document.getElementById('riskChart'), {
         type: 'pie',
         data: {
@@ -180,7 +342,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // TREND CHART
+    // RECENT SCORES TREND
     new Chart(document.getElementById('trendChart'), {
         type: 'line',
         data: {
@@ -193,6 +355,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
 </script>
 
 </body>

@@ -70,6 +70,11 @@ def dashboard():
     # ✅ SAFE SCORES (prevents crashes)
     scores = [float(a.score or 0) for a in apps]
 
+    portfolio_el = round(
+        sum(float(a.expected_loss or 0) for a in apps),
+        2
+    )
+
     avg_score = round(sum(scores) / total, 2) if total else 0
 
     approved = len([a for a in apps if a.decision == "Approved"])
@@ -99,8 +104,11 @@ def dashboard():
 
     recent_scores = scores[-10:]
 
+    
+
     return render_template(
-        "dashboard.html",
+        "dashboard.html", 
+        portfolio_el=portfolio_el,
         apps=apps,
         total=total,
         avg_score=avg_score,
@@ -152,10 +160,16 @@ def score():
             installment_rate=installment_rate,
             age=age,
             existing_credits=existing_credits,
+
             score=float(result.get("score", 0)),
             risk=result.get("risk", "Unknown"),
-            decision="Pending"
+            decision="Pending",
+
+            pd=float(result.get("pd", 0)),
+            lgd=float(result.get("lgd", 0)),
+            expected_loss=float(result.get("expected_loss", 0))
         )
+
 
         db.session.add(new_app)
         db.session.commit()

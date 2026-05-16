@@ -23,5 +23,9 @@ class Application(db.Model):
     existing_credits = db.Column(db.Float)
 
     score = db.Column(db.Float)
-    risk = db.Column(db.String(10))
-    decision = db.Column(db.String(10))
+    risk = db.Column(db.String(20))
+    decision = db.Column(db.String(20))
+
+    pd = db.Column(db.Float)
+    lgd = db.Column(db.Float)
+    expected_loss = db.Column(db.Float)

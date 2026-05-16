@@ -1,6 +1,7 @@
 import pickle
 import os
 import numpy as np
+import joblib
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,41 +21,48 @@ except:
 # -----------------------
 # PREDICTION
 # -----------------------
+model = joblib.load('credit_model.pkl')
+scaler = joblib.load('scaler.pkl')
+
+
 def predict_credit_score(duration, amount, installment_rate, age, existing_credits):
 
-    if model is None or scaler is None:
-        return {"error": "Model not loaded"}
+    features = np.array([[duration, amount, installment_rate, age, existing_credits]])
 
-    try:
-        X = np.array([[
-            duration,
-            amount,
-            installment_rate,
-            age,
-            existing_credits
-        ]])
+    scaled = scaler.transform(features)
 
-        X_scaled = scaler.transform(X)
+    # Probability of GOOD credit
+    prob_good = model.predict_proba(scaled)[0][1]
 
-        prob_default = model.predict_proba(X_scaled)[0][1]
+    # Probability of default
+    pd = 1 - prob_good
 
-        score = round((1 - prob_default) * 100, 2)
+    # Convert to score
+    score = round(prob_good * 100, 2)
 
-        if score > 70:
-            risk = "Low"
-        elif score > 40:
-            risk = "Medium"
-        else:
-            risk = "High"
+    # Risk categories
+    if pd >= 0.6:
+        risk = "High"
+    elif pd >= 0.3:
+        risk = "Medium"
+    else:
+        risk = "Low"
 
-        return {
-            "score": score,
-            "risk": risk,
-            "prob_default": round(prob_default, 3)
-        }
+    # Banking assumptions
+    lgd = 0.45
+    ead = amount
 
-    except Exception as e:
-        return {"error": str(e)}
+    # Expected Loss
+    expected_loss = round(pd * lgd * ead, 2)
+
+    return {
+        "score": score,
+        "risk": risk,
+        "pd": round(pd, 4),
+        "lgd": lgd,
+        "ead": ead,
+        "expected_loss": expected_loss
+    }
 
 
 # -----------------------
